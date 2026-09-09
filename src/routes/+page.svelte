@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { fade, fly } from 'svelte/transition';
+    import { fly } from 'svelte/transition';
 </script>
 
 <svelte:head>
@@ -195,7 +195,7 @@
                 </div>
                 <span class="font-bold text-white text-lg tracking-tight">TearRubr</span>
             </div>
-            <p class="text-slate-500">© 2026 TearRubr MVP. Built for the Hackathon.</p>
+            <p class="text-slate-500">© 2026 TearRubr. All rights reserved.</p>
             <div class="flex gap-6">
                 <a href="/dashboard" class="text-slate-500 hover:text-white transition-colors">Portal</a>
                 <a href="/verify" class="text-slate-500 hover:text-white transition-colors">Verify</a>
