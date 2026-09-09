@@ -12,11 +12,17 @@
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch"
 	},
 	"devDependencies": {
+		"@nomicfoundation/hardhat-toolbox": "^7.0.0",
 		"@sveltejs/adapter-auto": "^7.0.1",
 		"@sveltejs/kit": "^2.63.0",
 		"@sveltejs/vite-plugin-svelte": "^7.1.2",
+		"autoprefixer": "^10.5.5",
+		"hardhat": "^3.16.0",
+		"postcss": "^8.5.28",
+		"prisma": "^8.0.0-rc.13",
 		"svelte": "^5.56.1",
 		"svelte-check": "^4.6.0",
+		"tailwindcss": "^4.3.3",
 		"typescript": "^6.0.3",
 		"vite": "^8.0.16"
 	}
