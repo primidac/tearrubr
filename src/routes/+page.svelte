@@ -17,12 +17,12 @@
         <!-- Navigation Bar -->
         <nav class="w-full px-8 py-6 flex items-center justify-between relative z-50">
             <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-400 to-cyan-500 shadow-[0_0_15px_rgba(59,130,246,0.4)] flex items-center justify-center">
+                <div class="w-10 h-10 rounded-xl bg-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.4)] flex items-center justify-center">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-slate-950" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
                     </svg>
                 </div>
-                <span class="text-2xl font-black tracking-tight text-white">Tear<span class="text-blue-400">Rubr</span></span>
+                <span class="text-2xl font-black tracking-tight text-white">Tear<span class="text-blue-500">Rubr</span></span>
             </div>
             <div class="hidden md:flex gap-6 items-center">
                 <a href="#problem" class="text-slate-300 hover:text-white font-medium transition-colors">The Problem</a>
@@ -38,7 +38,7 @@
                 
                 <h1 in:fly={{ y: 30, duration: 1000, delay: 100 }} class="text-6xl md:text-8xl font-extrabold tracking-tight text-white leading-tight mb-6">
                     Absolute Trust for <br />
-                    <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-500">Physical Products.</span>
+                    <span class="text-blue-500">Physical Products.</span>
                 </h1>
                 
                 <p in:fly={{ y: 30, duration: 1000, delay: 200 }} class="text-xl md:text-2xl text-slate-400 max-w-3xl mx-auto mb-12 leading-relaxed">
@@ -46,7 +46,7 @@
                 </p>
 
                 <div in:fly={{ y: 30, duration: 1000, delay: 300 }} class="flex flex-col sm:flex-row items-center justify-center gap-6">
-                    <a href="/dashboard" class="w-full sm:w-auto px-8 py-5 rounded-2xl bg-gradient-to-r from-blue-500 to-cyan-600 text-white font-bold text-lg shadow-[0_0_30px_rgba(59,130,246,0.4)] hover:shadow-[0_0_40px_rgba(59,130,246,0.6)] hover:scale-105 transition-all duration-300">
+                    <a href="/dashboard" class="w-full sm:w-auto px-8 py-5 rounded-2xl bg-blue-600 text-white font-bold text-lg shadow-[0_0_30px_rgba(59,130,246,0.4)] hover:shadow-[0_0_40px_rgba(59,130,246,0.6)] hover:bg-blue-500 hover:scale-105 transition-all duration-300">
                         Manufacturer Portal
                     </a>
                     
@@ -62,7 +62,7 @@
     </div>
 
     <!-- Divider -->
-    <div class="w-full h-px bg-gradient-to-r from-transparent via-blue-500/50 to-transparent"></div>
+    <div class="w-full h-px bg-blue-500/20"></div>
 
     <!-- The Problem Section -->
     <section id="problem" class="py-32 px-6 relative z-10">
@@ -120,7 +120,7 @@
             <div class="grid md:grid-cols-3 gap-8">
                 <!-- Step 1 -->
                 <div class="bg-slate-900/60 backdrop-blur-xl border border-slate-700/50 rounded-3xl p-8 shadow-xl hover:border-blue-500/40 hover:shadow-[0_0_30px_rgba(59,130,246,0.15)] transition-all duration-300 group">
-                    <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500/20 to-cyan-500/20 border border-blue-500/30 text-blue-400 flex items-center justify-center text-2xl font-black mb-8 group-hover:scale-110 transition-transform">
+                    <div class="w-14 h-14 rounded-2xl bg-blue-500/20 border border-blue-500/30 text-blue-400 flex items-center justify-center text-2xl font-black mb-8 group-hover:scale-110 transition-transform">
                         1
                     </div>
                     <h3 class="text-2xl font-bold text-white mb-4">Identity Creation</h3>
@@ -131,7 +131,7 @@
 
                 <!-- Step 2 -->
                 <div class="bg-slate-900/60 backdrop-blur-xl border border-slate-700/50 rounded-3xl p-8 shadow-xl hover:border-blue-500/40 hover:shadow-[0_0_30px_rgba(59,130,246,0.15)] transition-all duration-300 group relative md:top-8">
-                    <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500/20 to-cyan-500/20 border border-blue-500/30 text-blue-400 flex items-center justify-center text-2xl font-black mb-8 group-hover:scale-110 transition-transform">
+                    <div class="w-14 h-14 rounded-2xl bg-blue-500/20 border border-blue-500/30 text-blue-400 flex items-center justify-center text-2xl font-black mb-8 group-hover:scale-110 transition-transform">
                         2
                     </div>
                     <h3 class="text-2xl font-bold text-white mb-4">Immutable Record</h3>
@@ -142,7 +142,7 @@
 
                 <!-- Step 3 -->
                 <div class="bg-slate-900/60 backdrop-blur-xl border border-slate-700/50 rounded-3xl p-8 shadow-xl hover:border-blue-500/40 hover:shadow-[0_0_30px_rgba(59,130,246,0.15)] transition-all duration-300 group">
-                    <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500/20 to-cyan-500/20 border border-blue-500/30 text-blue-400 flex items-center justify-center text-2xl font-black mb-8 group-hover:scale-110 transition-transform">
+                    <div class="w-14 h-14 rounded-2xl bg-blue-500/20 border border-blue-500/30 text-blue-400 flex items-center justify-center text-2xl font-black mb-8 group-hover:scale-110 transition-transform">
                         3
                     </div>
                     <h3 class="text-2xl font-bold text-white mb-4">Simple Verification</h3>
@@ -173,7 +173,7 @@
                     Physical Product
                 </div>
                 <div class="hidden sm:flex text-slate-600 px-4">→</div>
-                <div class="px-8 py-4 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-bold shadow-[0_0_20px_rgba(59,130,246,0.3)] z-10 scale-110">
+                <div class="px-8 py-4 rounded-xl bg-blue-600 text-white font-bold shadow-[0_0_20px_rgba(59,130,246,0.3)] z-10 scale-110">
                     Digital Identity
                 </div>
                 <div class="hidden sm:flex text-slate-600 px-4">→</div>
@@ -188,7 +188,7 @@
     <footer class="w-full py-12 px-6 border-t border-slate-800/80 bg-slate-950 relative z-20">
         <div class="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
             <div class="flex items-center gap-3">
-                <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-400 to-cyan-500 flex items-center justify-center">
+                <div class="w-8 h-8 rounded-lg bg-blue-500 flex items-center justify-center">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-950" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
                     </svg>
