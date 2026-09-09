@@ -2,8 +2,8 @@
     import { fade, fly } from 'svelte/transition';
     import { goto } from '$app/navigation';
 
-    let productId = '';
-    let isSubmitting = false;
+    let productId = $state('');
+    let isSubmitting = $state(false);
 
     function verifyProduct() {
         if (!productId.trim()) return;
@@ -36,7 +36,7 @@
             <div class="absolute -top-24 -right-24 w-48 h-48 bg-cyan-500/20 rounded-full blur-3xl"></div>
             <div class="absolute -bottom-24 -left-24 w-48 h-48 bg-emerald-500/20 rounded-full blur-3xl"></div>
 
-            <form on:submit|preventDefault={verifyProduct} class="relative z-10 space-y-6">
+            <form onsubmit={(e) => { e.preventDefault(); verifyProduct(); }} class="relative z-10 space-y-6">
                 <div>
                     <label for="productId" class="sr-only">Product ID</label>
                     <div class="relative">

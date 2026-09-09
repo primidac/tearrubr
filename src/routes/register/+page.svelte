@@ -2,11 +2,11 @@
     import { fade, fly } from 'svelte/transition';
     import { goto } from '$app/navigation';
     
-    let manufacturer = '';
-    let name = '';
-    let description = '';
-    let isSubmitting = false;
-    let error = '';
+    let manufacturer = $state('');
+    let name = $state('');
+    let description = $state('');
+    let isSubmitting = $state(false);
+    let error = $state('');
 
     async function registerProduct() {
         if (!manufacturer || !name) {
@@ -68,7 +68,7 @@
                     </div>
                 {/if}
 
-                <form on:submit|preventDefault={registerProduct} class="space-y-6">
+                <form onsubmit={(e) => { e.preventDefault(); registerProduct(); }} class="space-y-6">
                     <div class="space-y-2">
                         <label for="manufacturer" class="block text-sm font-medium text-slate-300">Manufacturer Name</label>
                         <input 

@@ -1,0 +1,42 @@
+{
+  "_format": "hh3-sol-build-info-1",
+  "id": "solc-0_8_28-61e8b54a3fda7d90e0bde5060a93749b47c2fcd9",
+  "solcVersion": "0.8.28",
+  "solcLongVersion": "0.8.28+commit.7893614a",
+  "compilerType": "solc",
+  "userSourceNameMap": {
+    "contracts/TearRubr.sol": "project/contracts/TearRubr.sol"
+  },
+  "input": {
+    "language": "Solidity",
+    "settings": {
+      "evmVersion": "cancun",
+      "outputSelection": {
+        "*": {
+          "": [
+            "ast"
+          ],
+          "*": [
+            "abi",
+            "evm.bytecode.linkReferences",
+            "evm.bytecode.object",
+            "evm.bytecode.opcodes",
+            "evm.bytecode.sourceMap",
+            "evm.deployedBytecode.immutableReferences",
+            "evm.deployedBytecode.linkReferences",
+            "evm.deployedBytecode.object",
+            "evm.deployedBytecode.opcodes",
+            "evm.deployedBytecode.sourceMap",
+            "evm.methodIdentifiers"
+          ]
+        }
+      },
+      "remappings": []
+    },
+    "sources": {
+      "project/contracts/TearRubr.sol": {
+        "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.28;\n\ncontract TearRubr {\n    struct Product {\n        string manufacturer;\n        bool isRegistered;\n        bool isAuthentic;\n    }\n\n    // Mapping from Product ID (e.g., a hash or UUID string) to Product details\n    mapping(string => Product) public products;\n    \n    // Mapping to restrict who can register products (simplified for MVP)\n    mapping(address => bool) public authorizedManufacturers;\n\n    event ProductRegistered(string productId, string manufacturer);\n    event ProductStatusUpdated(string productId, bool isAuthentic);\n\n    address public owner;\n\n    modifier onlyOwner() {\n        require(msg.sender == owner, \"Not owner\");\n        _;\n    }\n\n    modifier onlyAuthorized() {\n        require(authorizedManufacturers[msg.sender] || msg.sender == owner, \"Not authorized\");\n        _;\n    }\n\n    constructor() {\n        owner = msg.sender;\n    }\n\n    function authorizeManufacturer(address manufacturer) external onlyOwner {\n        authorizedManufacturers[manufacturer] = true;\n    }\n\n    function registerProduct(string memory productId, string memory manufacturer) external onlyAuthorized {\n        require(!products[productId].isRegistered, \"Product already registered\");\n        \n        products[productId] = Product({\n            manufacturer: manufacturer,\n            isRegistered: true,\n            isAuthentic: true\n        });\n\n        emit ProductRegistered(productId, manufacturer);\n    }\n\n    function updateProductStatus(string memory productId, bool isAuthentic) external onlyAuthorized {\n        require(products[productId].isRegistered, \"Product not registered\");\n        products[productId].isAuthentic = isAuthentic;\n\n        emit ProductStatusUpdated(productId, isAuthentic);\n    }\n\n    function verifyProduct(string memory productId) external view returns (bool isRegistered, bool isAuthentic, string memory manufacturer) {\n        Product memory p = products[productId];\n        return (p.isRegistered, p.isAuthentic, p.manufacturer);\n    }\n}\n"
+      }
+    }
+  }
+}
