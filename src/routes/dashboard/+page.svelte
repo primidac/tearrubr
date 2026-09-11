@@ -1,275 +1,728 @@
 <script lang="ts">
-	import Navbar from '$lib/components/Navbar.svelte';
+	import { fade } from 'svelte/transition';
+	import Logo from '$lib/components/Logo.svelte';
+	import PrivyAuthModal from '$lib/components/PrivyAuthModal.svelte';
 	import { auth } from '$lib/auth.svelte';
 
 	let { data } = $props();
 
+	// Dashboard tab selection
+	let activeView = $state<'products' | 'batches' | 'alerts'>('products');
+	let searchQuery = $state('');
+	let statusFilter = $state<'all' | 'sealed' | 'opened'>('all');
+	let isMobileSidebarOpen = $state(false);
+	let copiedId = $state<string | null>(null);
+
 	function formatDate(timestamp: Date | number) {
 		const date = timestamp instanceof Date ? timestamp : new Date(Number(timestamp) * 1000);
-		return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+		return date.toLocaleDateString('en-US', {
+			month: 'short',
+			day: 'numeric',
+			year: 'numeric',
+			hour: '2-digit',
+			minute: '2-digit'
+		});
 	}
 
-	function truncateId(id: string, lead = 8, trail = 6) {
-		if (!id) return '';
-		return id.length > lead + trail ? `${id.slice(0, lead)}…${id.slice(-trail)}` : id;
+	function truncate(str: string, lead = 6, trail = 4) {
+		if (!str) return '';
+		return str.length > lead + trail ? `${str.slice(0, lead)}…${str.slice(-trail)}` : str;
 	}
 
+	function copyToClipboard(text: string, id: string) {
+		navigator.clipboard.writeText(text);
+		copiedId = id;
+		setTimeout(() => {
+			if (copiedId === id) copiedId = null;
+		}, 2000);
+	}
+
+	// Metrics
 	let totalUnits = $derived(data.products.length);
 	let batchRuns = $derived(data.batches?.length || 0);
-	let intactSeals = $derived(
-		data.products.filter((p) => p.sealStatus !== 'opened').length
+	let intactSeals = $derived(data.products.filter((p) => p.sealStatus !== 'opened').length);
+	let brokenSeals = $derived(data.products.filter((p) => p.sealStatus === 'opened').length);
+	let intactRate = $derived(totalUnits > 0 ? Math.round((intactSeals / totalUnits) * 100) : 100);
+
+	// Filtered Products
+	let filteredProducts = $derived(
+		data.products.filter((p) => {
+			if (statusFilter === 'sealed' && p.sealStatus === 'opened') return false;
+			if (statusFilter === 'opened' && p.sealStatus !== 'opened') return false;
+
+			if (!searchQuery.trim()) return true;
+			const q = searchQuery.toLowerCase().trim();
+			return (
+				p.name.toLowerCase().includes(q) ||
+				p.manufacturer.toLowerCase().includes(q) ||
+				p.id.toLowerCase().includes(q) ||
+				(p.batchNumber && p.batchNumber.toLowerCase().includes(q)) ||
+				(p.blockchainTxHash && p.blockchainTxHash.toLowerCase().includes(q))
+			);
+		})
 	);
-	let intactRate = $derived(
-		totalUnits > 0 ? Math.round((intactSeals / totalUnits) * 100) : 100
+
+	// Filtered Batches
+	let filteredBatches = $derived(
+		(data.batches || []).filter((b) => {
+			if (!searchQuery.trim()) return true;
+			const q = searchQuery.toLowerCase().trim();
+			return (
+				b.batchNumber.toLowerCase().includes(q) ||
+				b.productName.toLowerCase().includes(q) ||
+				b.manufacturer.toLowerCase().includes(q) ||
+				b.merkleRoot.toLowerCase().includes(q)
+			);
+		})
+	);
+
+	// Tamper Alerts
+	let tamperedProducts = $derived(
+		data.products.filter((p) => p.sealStatus === 'opened')
 	);
 </script>
 
 <svelte:head>
-	<title>Dashboard | TearRubr</title>
+	<title>Manufacturer Workspace | TearRubr</title>
 	<meta
 		name="description"
-		content="Manage on-chain product batches, monitor physical seal states, and audit supply chain integrity."
+		content="Enterprise manufacturer dashboard for Ethereum Sepolia batch minting, Merkle proof auditing, and physical seal telemetry."
 	/>
 </svelte:head>
 
-<div class="min-h-screen bg-[#08080e] text-text-primary selection:bg-indigo-500/20 pb-32">
-	<!-- Floating Pill Dock Navigation -->
-	<Navbar currentPath="/dashboard" />
+<!-- Actual Dashboard Shell (No floating landing navbar) -->
+<div class="min-h-screen bg-[#06060a] text-text-primary flex flex-col lg:flex-row selection:bg-indigo-500/20 antialiased font-sans">
+	
+	<!-- ========================================================================= -->
+	<!-- 1. PERSISTENT SIDEBAR (DESKTOP & MOBILE DRAWER) -->
+	<!-- ========================================================================= -->
+	
+	<!-- Mobile Drawer Backdrop -->
+	{#if isMobileSidebarOpen}
+		<button
+			type="button"
+			class="fixed inset-0 bg-black/80 backdrop-blur-md z-40 lg:hidden cursor-default w-full h-full border-none"
+			onclick={() => (isMobileSidebarOpen = false)}
+			aria-label="Close navigation sidebar"
+			transition:fade={{ duration: 150 }}
+		></button>
+	{/if}
 
-	<!-- Atmospheric Blooms (Sahara AI aesthetic) -->
-	<div class="fixed inset-0 pointer-events-none overflow-hidden select-none z-0">
-		<div class="absolute top-10 right-10 w-[550px] h-[550px] rounded-full bg-[#6366f1]/15 blur-[140px]"></div>
-		<div class="absolute bottom-20 left-10 w-[550px] h-[550px] rounded-full bg-[#10b981]/15 blur-[140px]"></div>
-	</div>
+	<aside
+		class="fixed lg:sticky top-0 left-0 bottom-0 z-50 w-72 bg-[#090912] border-r border-white/[0.08] flex flex-col justify-between transition-transform duration-200 lg:translate-x-0 {isMobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'} shrink-0 h-screen overflow-y-auto"
+	>
+		<!-- Sidebar Top: Brand & Workspace -->
+		<div>
+			<!-- Logo Header -->
+			<div class="p-6 border-b border-white/[0.06] flex items-center justify-between">
+				<a href="/" class="flex items-center gap-3 group">
+					<Logo size={28} />
+					<div>
+						<div class="text-sm font-extrabold text-white font-display tracking-tight flex items-center gap-1.5">
+							<span>TearRubr</span>
+							<span class="px-1.5 py-0.2 rounded bg-indigo-500/20 text-indigo-400 text-[9px] font-mono-tight">PRO</span>
+						</div>
+						<div class="text-[10px] text-[#7a7a8e] font-mono-tight">Vault Console</div>
+					</div>
+				</a>
 
-	<!-- Main Dashboard Container -->
-	<main class="max-w-6xl mx-auto px-4 sm:px-6 pt-32 sm:pt-40 relative z-10">
-		<!-- Header & Quick Action Buttons -->
-		<div class="flex flex-col sm:flex-row sm:items-end justify-between gap-6 pb-8 border-b border-white/[0.08]">
-			<div>
-				<div class="flex items-center gap-2 mb-1.5">
-					<span class="text-xs font-mono-tight uppercase tracking-wider text-accent font-semibold">
-						Manufacturer Workspace
-					</span>
-					<span class="text-white/20">/</span>
-					<span class="text-xs font-mono-tight text-emerald-400">Sepolia Active</span>
-				</div>
-				<h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight text-white font-display">
-					Dashboard
-				</h1>
+				<!-- Close on mobile -->
+				<button
+					onclick={() => (isMobileSidebarOpen = false)}
+					class="lg:hidden text-[#8e8ea0] hover:text-white text-lg p-1"
+				>
+					✕
+				</button>
 			</div>
 
-			<div class="flex flex-wrap items-center gap-2.5">
+			<!-- Workspace Selector Badge -->
+			<div class="px-4 py-3 border-b border-white/[0.04]">
+				<div class="px-3 py-2 rounded-xl bg-white/[0.02] border border-white/[0.06] flex items-center justify-between text-xs">
+					<div class="flex items-center gap-2 min-w-0">
+						<span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+						<span class="font-medium text-white truncate">Sepolia Network</span>
+					</div>
+					<span class="text-[10px] font-mono-tight text-[#8e8ea0]">11155111</span>
+				</div>
+			</div>
+
+			<!-- Navigation Links -->
+			<nav class="p-3 space-y-1 text-xs font-display">
+				<div class="px-3 pt-3 pb-1 text-[10px] font-mono-tight uppercase tracking-wider text-[#606074] font-semibold">
+					Workspace
+				</div>
+
+				<button
+					onclick={() => {
+						activeView = 'products';
+						isMobileSidebarOpen = false;
+					}}
+					class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all {activeView === 'products' ? 'bg-white text-[#08080e] font-bold shadow-md' : 'text-[#8e8ea0] hover:text-white hover:bg-white/[0.04]'}"
+				>
+					<div class="flex items-center gap-2.5">
+						<span>📋</span>
+						<span>All Authenticity Records</span>
+					</div>
+					<span class="text-[11px] font-mono-tight {activeView === 'products' ? 'text-[#08080e]' : 'text-[#606074]'}">
+						{totalUnits}
+					</span>
+				</button>
+
+				<button
+					onclick={() => {
+						activeView = 'batches';
+						isMobileSidebarOpen = false;
+					}}
+					class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all {activeView === 'batches' ? 'bg-white text-[#08080e] font-bold shadow-md' : 'text-[#8e8ea0] hover:text-white hover:bg-white/[0.04]'}"
+				>
+					<div class="flex items-center gap-2.5">
+						<span>📦</span>
+						<span>Batch Merkle Runs</span>
+					</div>
+					<span class="text-[11px] font-mono-tight {activeView === 'batches' ? 'text-[#08080e]' : 'text-[#606074]'}">
+						{batchRuns}
+					</span>
+				</button>
+
+				<button
+					onclick={() => {
+						activeView = 'alerts';
+						isMobileSidebarOpen = false;
+					}}
+					class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all {activeView === 'alerts' ? 'bg-amber-400 text-[#08080e] font-bold shadow-md' : 'text-[#8e8ea0] hover:text-white hover:bg-white/[0.04]'}"
+				>
+					<div class="flex items-center gap-2.5">
+						<span>⚠️</span>
+						<span>Seal Breach Telemetry</span>
+					</div>
+					{#if brokenSeals > 0}
+						<span class="px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-[10px] font-mono-tight font-bold">
+							{brokenSeals}
+						</span>
+					{:else}
+						<span class="text-[10px] text-emerald-400 font-mono-tight">0</span>
+					{/if}
+				</button>
+
+				<div class="px-3 pt-5 pb-1 text-[10px] font-mono-tight uppercase tracking-wider text-[#606074] font-semibold">
+					Actions & Explorer
+				</div>
+
 				<a
 					href="/register"
-					class="px-5 py-2.5 rounded-full bg-white text-[#08080e] hover:bg-white/90 font-bold text-xs font-display transition-all shadow-md hover:scale-[1.02] active:scale-[0.98]"
+					class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-indigo-300 hover:text-white hover:bg-indigo-500/10 transition-colors"
 				>
-					+ New Batch Rollup
+					<span>✨</span>
+					<span>+ New Batch Rollup</span>
 				</a>
+
 				<a
 					href="/verify"
-					class="px-4 py-2.5 rounded-full bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-white font-medium text-xs font-display transition-all"
+					class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-[#8e8ea0] hover:text-white hover:bg-white/[0.04] transition-colors"
 				>
-					Public Ledger
+					<span>🌐</span>
+					<span>Public Ledger</span>
 				</a>
-			</div>
+
+				<a
+					href="https://sepolia.etherscan.io/address/{data.contractAddress}"
+					target="_blank"
+					rel="noopener noreferrer"
+					class="flex items-center justify-between px-3 py-2.5 rounded-xl text-[#8e8ea0] hover:text-white hover:bg-white/[0.04] transition-colors"
+				>
+					<div class="flex items-center gap-2.5">
+						<span>📜</span>
+						<span>Sepolia Contract</span>
+					</div>
+					<span class="text-[10px] text-[#606074]">↗</span>
+				</a>
+
+				<a
+					href="/"
+					class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-[#8e8ea0] hover:text-white hover:bg-white/[0.04] transition-colors"
+				>
+					<span>🏠</span>
+					<span>Back to Home</span>
+				</a>
+			</nav>
 		</div>
 
-		<!-- Connected Manufacturer Profile Card (Real Web3 & Sepolia On-Chain Identity) -->
-		<div class="mt-8 p-5 sm:p-6 rounded-3xl bg-[#0c0c16]/80 border border-white/[0.08] backdrop-blur-2xl shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-6">
+		<!-- Sidebar Bottom: Wallet Identity Widget -->
+		<div class="p-4 border-t border-white/[0.06] bg-[#07070d]">
 			{#if auth.session.isConnected}
-				<div class="flex items-center gap-4">
-					<div class="w-12 h-12 rounded-2xl {auth.session.isOwner || auth.session.isVerifiedManufacturer ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40' : 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30'} border flex items-center justify-center font-bold text-base font-display shrink-0">
-						{auth.session.isOwner || auth.session.isVerifiedManufacturer ? '✓' : 'ID'}
-					</div>
-					<div>
-						<div class="flex flex-wrap items-center gap-2.5">
-							<h2 class="text-base font-bold text-white font-display">
-								{auth.session.ensName || truncateId(auth.session.walletAddress || '', 8, 6)}
-							</h2>
-							{#if auth.session.isOwner}
-								<span class="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-[11px] font-mono-tight border border-emerald-500/30">
-									✓ Contract Owner (Sepolia)
-								</span>
-							{:else if auth.session.isVerifiedManufacturer}
-								<span class="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-[11px] font-mono-tight border border-emerald-500/30">
-									✓ Whitelisted Manufacturer
-								</span>
-							{:else}
-								<span class="px-2 py-0.5 rounded-full bg-white/10 text-[#8e8ea0] text-[11px] font-mono-tight">
-									Community Wallet
-								</span>
-							{/if}
+				<div class="p-3 rounded-2xl bg-white/[0.03] border border-white/[0.08] space-y-2">
+					<div class="flex items-center justify-between">
+						<div class="flex items-center gap-2">
+							<span class="w-2 h-2 rounded-full {auth.session.isOwner || auth.session.isVerifiedManufacturer ? 'bg-emerald-400' : 'bg-indigo-400'}"></span>
+							<span class="text-xs font-bold text-white font-mono-tight">
+								{auth.session.ensName || truncate(auth.session.walletAddress || '', 6, 4)}
+							</span>
 						</div>
-						<div class="flex flex-wrap items-center gap-3 text-xs text-[#8e8ea0] mt-1 font-mono-tight">
-							<span>ENS: <strong class="text-white">{auth.session.ensName || 'No reverse ENS'}</strong></span>
-							<span class="text-white/20">·</span>
-							<span>Address: {truncateId(auth.session.walletAddress || '', 10, 8)}</span>
-							<span class="text-white/20">·</span>
-							<span class="text-emerald-400">Sepolia Active</span>
-						</div>
+						<button
+							onclick={() => auth.disconnect()}
+							class="text-[10px] text-[#7a7a8e] hover:text-red-400 transition-colors font-display"
+							title="Disconnect Wallet"
+						>
+							Disconnect
+						</button>
 					</div>
-				</div>
 
-				<div class="flex items-center gap-3 self-start md:self-auto">
+					<div class="text-[10px] font-mono-tight text-[#8e8ea0]">
+						{#if auth.session.isOwner}
+							<span class="text-emerald-400 font-semibold">✓ Contract Owner</span>
+						{:else if auth.session.isVerifiedManufacturer}
+							<span class="text-emerald-400 font-semibold">✓ Whitelisted Manufacturer</span>
+						{:else}
+							<span class="text-[#8e8ea0]">Community Wallet</span>
+						{/if}
+					</div>
+
 					<button
 						onclick={() => auth.openModal()}
-						class="px-4 py-2 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-display text-white transition-all"
+						class="w-full py-1.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.1] text-white text-[11px] font-display transition-colors"
 					>
-						Switch Wallet ↗
+						Switch Account ↗
 					</button>
 				</div>
 			{:else}
-				<div class="flex items-center gap-4">
-					<div class="w-12 h-12 rounded-2xl bg-white/[0.04] border border-white/10 flex items-center justify-center font-bold text-base font-display text-[#8e8ea0] shrink-0">
-						⚿
-					</div>
-					<div>
-						<h2 class="text-base font-bold text-white font-display">
-							Wallet Disconnected
-						</h2>
-						<p class="text-xs text-[#8e8ea0] mt-0.5">
-							Connect your Web3 wallet (MetaMask, Rabby, Rainbow) to verify on-chain manufacturer credentials and mint batches.
-						</p>
-					</div>
-				</div>
-
-				<div class="flex items-center gap-3 self-start md:self-auto">
+				<div class="p-3 rounded-2xl bg-white/[0.02] border border-white/[0.08] text-center space-y-2">
+					<div class="text-xs font-semibold text-white font-display">Wallet Disconnected</div>
+					<p class="text-[10px] text-[#7a7a8e] leading-relaxed">
+						Connect Web3 wallet to verify your on-chain manufacturer credentials.
+					</p>
 					<button
 						onclick={() => auth.openModal()}
-						class="px-5 py-2 rounded-full bg-white text-[#08080e] hover:bg-white/90 font-bold text-xs font-display transition-all shadow-md"
+						class="w-full py-2 rounded-xl bg-white text-[#08080e] hover:bg-white/90 font-bold text-xs font-display transition-all shadow-sm"
 					>
 						Connect Wallet
 					</button>
 				</div>
 			{/if}
 		</div>
+	</aside>
 
-		<!-- 3 Clean Metric Cards (Neat, uncluttered) -->
-		<div class="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
-			<!-- Total Units -->
-			<div class="p-6 rounded-3xl bg-white/[0.02] border border-white/[0.08] backdrop-blur-xl relative overflow-hidden">
-				<div class="text-xs font-mono-tight uppercase tracking-wider text-[#8e8ea0] font-semibold mb-2">
-					Units Minted On-Chain
-				</div>
-				<div class="text-3xl sm:text-4xl font-extrabold text-white font-display">
-					{totalUnits}
-				</div>
-				<div class="text-[11px] text-emerald-400 mt-2 flex items-center gap-1.5">
-					<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-					Active on Ethereum Sepolia
+	<!-- ========================================================================= -->
+	<!-- 2. MAIN DASHBOARD CONTENT AREA & COMMAND HEADER -->
+	<!-- ========================================================================= -->
+	<div class="flex-1 flex flex-col min-w-0">
+		
+		<!-- Dashboard Topbar Header -->
+		<header class="h-16 border-b border-white/[0.08] bg-[#090912]/80 backdrop-blur-xl px-4 sm:px-6 flex items-center justify-between sticky top-0 z-30">
+			<!-- Left: Mobile Toggle & Breadcrumbs -->
+			<div class="flex items-center gap-3 sm:gap-4 min-w-0">
+				<button
+					onclick={() => (isMobileSidebarOpen = true)}
+					class="lg:hidden p-2 rounded-xl bg-white/[0.05] border border-white/10 text-white text-xs"
+					aria-label="Open navigation drawer"
+				>
+					☰
+				</button>
+
+				<div class="flex items-center gap-2 text-xs font-display">
+					<span class="text-[#7a7a8e] hidden sm:inline">Manufacturer Workspace</span>
+					<span class="text-white/20 hidden sm:inline">/</span>
+					<span class="text-white font-bold truncate">
+						{activeView === 'products' ? 'Authenticity Ledger' : activeView === 'batches' ? 'Batch Rollups' : 'Tamper Telemetry'}
+					</span>
 				</div>
 			</div>
 
-			<!-- Batch Merkle Runs -->
-			<div class="p-6 rounded-3xl bg-white/[0.02] border border-white/[0.08] backdrop-blur-xl relative overflow-hidden">
-				<div class="text-xs font-mono-tight uppercase tracking-wider text-[#8e8ea0] font-semibold mb-2">
-					Batch Merkle Runs
+			<!-- Right: Live Node Status & Action Button -->
+			<div class="flex items-center gap-3">
+				<!-- Live Sepolia Block Status Badge -->
+				<div class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.03] border border-white/[0.08] text-[11px] font-mono-tight text-[#8e8ea0]">
+					<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+					<span>Sepolia #{auth.chainStatus.blockNumber ? auth.chainStatus.blockNumber.toLocaleString() : '11,683,834'}</span>
 				</div>
-				<div class="text-3xl sm:text-4xl font-extrabold text-indigo-400 font-display">
-					{batchRuns}
-				</div>
-				<div class="text-[11px] text-[#8e8ea0] mt-2">
-					1 On-Chain Tx per Batch Rollup
-				</div>
-			</div>
 
-			<!-- Seal Integrity -->
-			<div class="p-6 rounded-3xl bg-white/[0.02] border border-white/[0.08] backdrop-blur-xl relative overflow-hidden">
-				<div class="text-xs font-mono-tight uppercase tracking-wider text-[#8e8ea0] font-semibold mb-2">
-					Seal Integrity Rate
-				</div>
-				<div class="text-3xl sm:text-4xl font-extrabold text-emerald-400 font-display">
-					{intactRate}%
-				</div>
-				<div class="text-[11px] text-[#8e8ea0] mt-2">
-					{intactSeals} of {totalUnits} Seals Intact
-				</div>
-			</div>
-		</div>
-
-		<!-- Recent Issued Items Table -->
-		<div class="mt-8 rounded-3xl bg-[#0c0c16]/80 border border-white/[0.08] backdrop-blur-2xl shadow-xl overflow-hidden">
-			<div class="p-6 border-b border-white/[0.06] flex items-center justify-between">
-				<div>
-					<h3 class="text-base font-bold text-white font-display">Recent Authenticity Records</h3>
-					<p class="text-xs text-[#8e8ea0] mt-0.5">Live records synchronized with Sepolia smart contract</p>
-				</div>
-				<a href="/verify" class="text-xs text-accent hover:underline font-display">
-					View All in Public Ledger →
+				<a
+					href="/register"
+					class="px-4 py-1.5 rounded-full bg-white text-[#08080e] hover:bg-white/90 font-bold text-xs font-display transition-all shadow-md flex items-center gap-1.5 shrink-0"
+				>
+					<span>+</span>
+					<span>New Batch</span>
 				</a>
 			</div>
+		</header>
 
-			{#if data.products.length === 0}
-				<div class="p-12 text-center text-xs text-[#8e8ea0]">
-					No products registered yet. Click <a href="/register" class="text-accent underline font-semibold">New Batch Rollup</a> to begin.
+		<!-- Main Dashboard Canvas -->
+		<main class="flex-1 p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl w-full mx-auto">
+			
+			<!-- Atmospheric Glow Background Accents -->
+			<div class="fixed inset-0 pointer-events-none overflow-hidden select-none z-0">
+				<div class="absolute top-20 right-20 w-[450px] h-[450px] rounded-full bg-[#6366f1]/10 blur-[140px]"></div>
+				<div class="absolute bottom-20 left-40 w-[450px] h-[450px] rounded-full bg-[#10b981]/10 blur-[140px]"></div>
+			</div>
+
+			<!-- Metrics Row (4 Cards) -->
+			<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 relative z-10">
+				<!-- Card 1: Total Units -->
+				<div class="p-5 rounded-2xl bg-[#0c0c16]/90 border border-white/[0.08] backdrop-blur-xl shadow-lg relative overflow-hidden">
+					<div class="flex items-center justify-between text-xs text-[#8e8ea0] mb-2 font-display">
+						<span>Units Minted</span>
+						<span class="text-emerald-400 font-mono-tight text-[10px]">On-Chain ✓</span>
+					</div>
+					<div class="text-3xl font-extrabold text-white font-display">
+						{totalUnits}
+					</div>
+					<div class="text-[11px] text-[#7a7a8e] mt-1.5 font-mono-tight">
+						Indexed on Ethereum Sepolia
+					</div>
 				</div>
+
+				<!-- Card 2: Batch Runs -->
+				<div class="p-5 rounded-2xl bg-[#0c0c16]/90 border border-white/[0.08] backdrop-blur-xl shadow-lg relative overflow-hidden">
+					<div class="flex items-center justify-between text-xs text-[#8e8ea0] mb-2 font-display">
+						<span>Merkle Batches</span>
+						<span class="text-indigo-400 font-mono-tight text-[10px]">1 Tx / Batch</span>
+					</div>
+					<div class="text-3xl font-extrabold text-indigo-400 font-display">
+						{batchRuns}
+					</div>
+					<div class="text-[11px] text-[#7a7a8e] mt-1.5 font-mono-tight">
+						Industrial batch rollups
+					</div>
+				</div>
+
+				<!-- Card 3: Seal Integrity -->
+				<div class="p-5 rounded-2xl bg-[#0c0c16]/90 border border-white/[0.08] backdrop-blur-xl shadow-lg relative overflow-hidden">
+					<div class="flex items-center justify-between text-xs text-[#8e8ea0] mb-2 font-display">
+						<span>Seal Integrity Rate</span>
+						<span class="font-mono-tight text-[10px] {brokenSeals === 0 ? 'text-emerald-400' : 'text-amber-400'}">
+							{brokenSeals === 0 ? 'Zero Breaches' : `${brokenSeals} Opened`}
+						</span>
+					</div>
+					<div class="text-3xl font-extrabold {intactRate === 100 ? 'text-emerald-400' : 'text-white'} font-display">
+						{intactRate}%
+					</div>
+					<div class="text-[11px] text-[#7a7a8e] mt-1.5 font-mono-tight">
+						{intactSeals} of {totalUnits} physical seals intact
+					</div>
+				</div>
+
+				<!-- Card 4: Smart Contract Status -->
+				<div class="p-5 rounded-2xl bg-[#0c0c16]/90 border border-white/[0.08] backdrop-blur-xl shadow-lg relative overflow-hidden">
+					<div class="flex items-center justify-between text-xs text-[#8e8ea0] mb-2 font-display">
+						<span>Contract Authority</span>
+						<span class="text-accent font-mono-tight text-[10px]">Active</span>
+					</div>
+					<div class="text-sm font-bold text-white font-mono-tight mt-1 truncate">
+						{truncate(data.contractAddress, 8, 6)}
+					</div>
+					<div class="text-[11px] text-accent mt-2 font-display">
+						<a
+							href="{data.explorerBaseUrl}/address/{data.contractAddress}"
+							target="_blank"
+							rel="noopener noreferrer"
+							class="hover:underline flex items-center gap-1"
+						>
+							<span>View on Sepolia Etherscan</span>
+							<span>↗</span>
+						</a>
+					</div>
+				</div>
+			</div>
+
+			<!-- Filter Bar & Search Controls -->
+			<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2 relative z-10">
+				<!-- Search input -->
+				<div class="relative flex-1 max-w-md">
+					<input
+						type="text"
+						bind:value={searchQuery}
+						placeholder="Search by product, lot number, or transaction hash..."
+						class="w-full pl-9 pr-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.08] hover:border-white/[0.15] text-xs text-white placeholder-[#606074] focus:outline-none focus:border-accent transition-all"
+					/>
+					<span class="absolute left-3 top-3 text-[#606074] text-xs">🔍</span>
+				</div>
+
+				<!-- View tabs -->
+				<div class="flex items-center gap-1.5 p-1 rounded-xl bg-white/[0.03] border border-white/[0.08] text-xs font-display self-start sm:self-auto">
+					<button
+						onclick={() => (activeView = 'products')}
+						class="px-3.5 py-1.5 rounded-lg transition-all {activeView === 'products' ? 'bg-white text-[#08080e] font-bold shadow' : 'text-[#8e8ea0] hover:text-white'}"
+					>
+						Products ({data.products.length})
+					</button>
+					<button
+						onclick={() => (activeView = 'batches')}
+						class="px-3.5 py-1.5 rounded-lg transition-all {activeView === 'batches' ? 'bg-white text-[#08080e] font-bold shadow' : 'text-[#8e8ea0] hover:text-white'}"
+					>
+						Batches ({data.batches?.length || 0})
+					</button>
+					<button
+						onclick={() => (activeView = 'alerts')}
+						class="px-3.5 py-1.5 rounded-lg transition-all {activeView === 'alerts' ? 'bg-amber-400 text-[#08080e] font-bold shadow' : 'text-[#8e8ea0] hover:text-white'}"
+					>
+						Breaches ({brokenSeals})
+					</button>
+				</div>
+			</div>
+
+			<!-- ================================================================= -->
+			<!-- VIEW 1: AUTHENTICITY PRODUCTS TABLE -->
+			<!-- ================================================================= -->
+			{#if activeView === 'products'}
+				<div class="rounded-2xl bg-[#0c0c16]/90 border border-white/[0.08] backdrop-blur-2xl shadow-xl overflow-hidden relative z-10" in:fade={{ duration: 150 }}>
+					<div class="p-5 border-b border-white/[0.06] flex items-center justify-between">
+						<div>
+							<h2 class="text-sm font-bold text-white font-display">Authenticity Registry</h2>
+							<p class="text-xs text-[#8e8ea0] mt-0.5">Direct records anchored on Ethereum Sepolia</p>
+						</div>
+						<div class="flex items-center gap-2">
+							<button
+								onclick={() => (statusFilter = 'all')}
+								class="px-2.5 py-1 rounded-lg text-[11px] font-mono-tight transition-colors {statusFilter === 'all' ? 'bg-white/10 text-white font-bold' : 'text-[#7a7a8e] hover:text-white'}"
+							>
+								All ({data.products.length})
+							</button>
+							<button
+								onclick={() => (statusFilter = 'sealed')}
+								class="px-2.5 py-1 rounded-lg text-[11px] font-mono-tight transition-colors {statusFilter === 'sealed' ? 'bg-emerald-500/20 text-emerald-400 font-bold' : 'text-[#7a7a8e] hover:text-white'}"
+							>
+								Sealed ({intactSeals})
+							</button>
+							<button
+								onclick={() => (statusFilter = 'opened')}
+								class="px-2.5 py-1 rounded-lg text-[11px] font-mono-tight transition-colors {statusFilter === 'opened' ? 'bg-amber-500/20 text-amber-300 font-bold' : 'text-[#7a7a8e] hover:text-white'}"
+							>
+								Torn ({brokenSeals})
+							</button>
+						</div>
+					</div>
+
+					{#if filteredProducts.length === 0}
+						<div class="p-12 text-center text-xs text-[#8e8ea0]">
+							No products found matching your search.
+						</div>
+					{:else}
+						<div class="overflow-x-auto">
+							<table class="w-full text-xs text-left">
+								<thead class="border-b border-white/[0.06] text-[#7a7a8e] uppercase font-mono-tight text-[10px] bg-white/[0.01]">
+									<tr>
+										<th class="px-5 py-3">Product Name & Issuer</th>
+										<th class="px-5 py-3">Batch / LOT</th>
+										<th class="px-5 py-3">Unique ID</th>
+										<th class="px-5 py-3">Seal Status</th>
+										<th class="px-5 py-3">Sepolia Tx</th>
+										<th class="px-5 py-3 text-right">Action</th>
+									</tr>
+								</thead>
+								<tbody class="divide-y divide-white/[0.04]">
+									{#each filteredProducts as product}
+										<tr class="hover:bg-white/[0.02] transition-colors">
+											<td class="px-5 py-3.5 font-medium text-white">
+												<div class="font-bold text-sm text-white font-display">{product.name}</div>
+												<div class="text-[11px] text-[#8e8ea0]">{product.manufacturer}</div>
+											</td>
+											<td class="px-5 py-3.5 font-mono-tight">
+												{#if product.batchNumber}
+													<span class="px-2 py-0.5 rounded bg-indigo-500/15 text-indigo-400 border border-indigo-500/30 text-[11px]">
+														LOT: {product.batchNumber} (#{product.serialIndex}/{product.batchQuantity})
+													</span>
+												{:else}
+													<span class="text-[#7a7a8e]">Single Item</span>
+												{/if}
+											</td>
+											<td class="px-5 py-3.5 font-mono-tight text-[#8e8ea0]">
+												<button
+													onclick={() => copyToClipboard(product.id, product.id)}
+													class="hover:text-white transition-colors"
+													title="Click to copy ID"
+												>
+													{copiedId === product.id ? '✓ Copied' : truncate(product.id, 8, 4)}
+												</button>
+											</td>
+											<td class="px-5 py-3.5">
+												<span class="px-2 py-0.5 rounded-full text-[10px] font-mono-tight {product.sealStatus === 'opened' ? 'bg-amber-500/15 text-amber-300 border border-amber-500/30' : 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30'}">
+													{product.sealStatus === 'opened' ? 'Torn / Broken' : 'Seal: Intact'}
+												</span>
+											</td>
+											<td class="px-5 py-3.5 font-mono-tight">
+												{#if product.blockchainTxHash}
+													<a
+														href="{data.explorerBaseUrl}/tx/{product.blockchainTxHash}"
+														target="_blank"
+														rel="noopener noreferrer"
+														class="text-accent hover:underline flex items-center gap-1"
+													>
+														<span>{truncate(product.blockchainTxHash, 6, 4)}</span>
+														<span>↗</span>
+													</a>
+												{:else}
+													<span class="text-[#606074]">—</span>
+												{/if}
+											</td>
+											<td class="px-5 py-3.5 text-right">
+												<a
+													href="/verify/{product.id}"
+													class="px-3 py-1 rounded-full bg-white/10 hover:bg-white/20 text-white font-display text-xs transition-all inline-block"
+												>
+													Verify Proof →
+												</a>
+											</td>
+										</tr>
+									{/each}
+								</tbody>
+							</table>
+						</div>
+					{/if}
+				</div>
+
+			<!-- ================================================================= -->
+			<!-- VIEW 2: BATCH MERKLE RUNS TABLE -->
+			<!-- ================================================================= -->
+			{:else if activeView === 'batches'}
+				<div class="rounded-2xl bg-[#0c0c16]/90 border border-white/[0.08] backdrop-blur-2xl shadow-xl overflow-hidden relative z-10" in:fade={{ duration: 150 }}>
+					<div class="p-5 border-b border-white/[0.06] flex items-center justify-between">
+						<div>
+							<h2 class="text-sm font-bold text-white font-display">Industrial Merkle Batch Rollups</h2>
+							<p class="text-xs text-[#8e8ea0] mt-0.5">High-volume production runs committed in 1 single Ethereum transaction</p>
+						</div>
+						<a
+							href="/register"
+							class="px-3 py-1.5 rounded-full bg-white text-[#08080e] hover:bg-white/90 text-xs font-bold font-display"
+						>
+							+ Mint New Batch
+						</a>
+					</div>
+
+					{#if filteredBatches.length === 0}
+						<div class="p-12 text-center text-xs text-[#8e8ea0]">
+							No batch runs registered yet. Click "+ Mint New Batch" to roll up your first industrial lot.
+						</div>
+					{:else}
+						<div class="overflow-x-auto">
+							<table class="w-full text-xs text-left">
+								<thead class="border-b border-white/[0.06] text-[#7a7a8e] uppercase font-mono-tight text-[10px] bg-white/[0.01]">
+									<tr>
+										<th class="px-5 py-3">Batch LOT Number</th>
+										<th class="px-5 py-3">Product Name & Manufacturer</th>
+										<th class="px-5 py-3">Quantity</th>
+										<th class="px-5 py-3">Merkle Root (On-Chain)</th>
+										<th class="px-5 py-3">Sepolia Tx</th>
+										<th class="px-5 py-3">Date Committed</th>
+									</tr>
+								</thead>
+								<tbody class="divide-y divide-white/[0.04]">
+									{#each filteredBatches as batch}
+										<tr class="hover:bg-white/[0.02] transition-colors">
+											<td class="px-5 py-3.5 font-bold font-mono-tight text-indigo-400">
+												{batch.batchNumber}
+											</td>
+											<td class="px-5 py-3.5">
+												<div class="font-bold text-white font-display">{batch.productName}</div>
+												<div class="text-[11px] text-[#8e8ea0]">{batch.manufacturer}</div>
+											</td>
+											<td class="px-5 py-3.5 font-mono-tight text-white font-semibold">
+												{batch.quantity.toLocaleString()} units
+											</td>
+											<td class="px-5 py-3.5 font-mono-tight text-[#8e8ea0]">
+												<button
+													onclick={() => copyToClipboard(batch.merkleRoot, batch.id)}
+													class="hover:text-white transition-colors"
+													title="Copy Merkle Root"
+												>
+													{copiedId === batch.id ? '✓ Copied' : truncate(batch.merkleRoot, 8, 6)}
+												</button>
+											</td>
+											<td class="px-5 py-3.5 font-mono-tight">
+												{#if batch.blockchainTxHash}
+													<a
+														href="{data.explorerBaseUrl}/tx/{batch.blockchainTxHash}"
+														target="_blank"
+														rel="noopener noreferrer"
+														class="text-accent hover:underline flex items-center gap-1"
+													>
+														<span>{truncate(batch.blockchainTxHash, 6, 4)}</span>
+														<span>↗</span>
+													</a>
+												{:else}
+													<span class="text-[#606074]">—</span>
+												{/if}
+											</td>
+											<td class="px-5 py-3.5 text-[#8e8ea0]">
+												{formatDate(batch.createdAt)}
+											</td>
+										</tr>
+									{/each}
+								</tbody>
+							</table>
+						</div>
+					{/if}
+				</div>
+
+			<!-- ================================================================= -->
+			<!-- VIEW 3: PHYSICAL SEAL BREACH TELEMETRY -->
+			<!-- ================================================================= -->
 			{:else}
-				<div class="overflow-x-auto">
-					<table class="w-full text-xs text-left">
-						<thead class="border-b border-white/[0.06] text-[#7a7a8e] uppercase font-mono-tight text-[10px]">
-							<tr>
-								<th class="px-6 py-3.5">Product & Manufacturer</th>
-								<th class="px-6 py-3.5">Batch / Type</th>
-								<th class="px-6 py-3.5">Unique ID</th>
-								<th class="px-6 py-3.5">Tamper Seal</th>
-								<th class="px-6 py-3.5">Sepolia Tx</th>
-								<th class="px-6 py-3.5 text-right">Action</th>
-							</tr>
-						</thead>
-						<tbody class="divide-y divide-white/[0.04]">
-							{#each data.products.slice(0, 10) as product}
-								<tr class="hover:bg-white/[0.02] transition-colors">
-									<td class="px-6 py-4 font-medium text-white">
-										<div class="font-bold text-sm text-white font-display">{product.name}</div>
-										<div class="text-[11px] text-[#8e8ea0]">{product.manufacturer}</div>
-									</td>
-									<td class="px-6 py-4 font-mono-tight">
-										{#if product.batchNumber}
-											<span class="px-2 py-0.5 rounded bg-indigo-500/15 text-indigo-400 border border-indigo-500/30 text-[11px]">
-												LOT: {product.batchNumber} (#{product.serialIndex})
-											</span>
-										{:else}
-											<span class="text-[#7a7a8e]">Single Item</span>
-										{/if}
-									</td>
-									<td class="px-6 py-4 font-mono-tight text-[#8e8ea0]">
-										{truncateId(product.id, 8, 6)}
-									</td>
-									<td class="px-6 py-4">
-										<span class="px-2 py-0.5 rounded-full text-[10px] font-mono-tight {product.sealStatus === 'opened' ? 'bg-amber-500/15 text-amber-300' : 'bg-emerald-500/15 text-emerald-300'}">
-											{product.sealStatus === 'opened' ? 'Broken' : 'Intact'}
-										</span>
-									</td>
-									<td class="px-6 py-4 font-mono-tight">
-										{#if product.blockchainTxHash}
-											<a
-												href="{data.explorerBaseUrl}/tx/{product.blockchainTxHash}"
-												target="_blank"
-												rel="noopener noreferrer"
-												class="text-accent hover:underline flex items-center gap-1"
-											>
-												<span>{truncateId(product.blockchainTxHash, 6, 4)}</span>
-												<span>↗</span>
-											</a>
-										{:else}
-											<span class="text-[#606074]">—</span>
-										{/if}
-									</td>
-									<td class="px-6 py-4 text-right">
-										<a
-											href="/verify/{product.id}"
-											class="px-3 py-1 rounded-full bg-white/10 hover:bg-white/20 text-white font-display text-xs transition-all"
-										>
-											Verify →
-										</a>
-									</td>
-								</tr>
-							{/each}
-						</tbody>
-					</table>
+				<div class="rounded-2xl bg-[#0c0c16]/90 border border-white/[0.08] backdrop-blur-2xl shadow-xl overflow-hidden relative z-10" in:fade={{ duration: 150 }}>
+					<div class="p-5 border-b border-white/[0.06] flex items-center justify-between">
+						<div>
+							<h2 class="text-sm font-bold text-amber-300 font-display flex items-center gap-2">
+								<span>⚠️</span>
+								<span>Physical Tamper-Evident Seal Breaches</span>
+							</h2>
+							<p class="text-xs text-[#8e8ea0] mt-0.5">Products whose physical tear seals have been broken in the field</p>
+						</div>
+						<span class="px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-300 text-xs font-mono-tight border border-amber-500/20">
+							{tamperedProducts.length} Breaches
+						</span>
+					</div>
+
+					{#if tamperedProducts.length === 0}
+						<div class="p-12 text-center text-xs text-[#8e8ea0]">
+							<div class="text-2xl mb-2">🛡️</div>
+							<div class="text-white font-bold font-display">Zero Physical Breaches Detected</div>
+							<div class="mt-1">All {totalUnits} registered product seals remain intact and unopened.</div>
+						</div>
+					{:else}
+						<div class="overflow-x-auto">
+							<table class="w-full text-xs text-left">
+								<thead class="border-b border-white/[0.06] text-[#7a7a8e] uppercase font-mono-tight text-[10px] bg-white/[0.01]">
+									<tr>
+										<th class="px-5 py-3">Product Name</th>
+										<th class="px-5 py-3">LOT / Serial</th>
+										<th class="px-5 py-3">Unique ID</th>
+										<th class="px-5 py-3">Torn / Unsealed At</th>
+										<th class="px-5 py-3 text-right">Audit</th>
+									</tr>
+								</thead>
+								<tbody class="divide-y divide-white/[0.04]">
+									{#each tamperedProducts as item}
+										<tr class="hover:bg-white/[0.02] transition-colors">
+											<td class="px-5 py-3.5 font-bold text-white font-display">
+												{item.name}
+											</td>
+											<td class="px-5 py-3.5 font-mono-tight text-amber-300">
+												{item.batchNumber ? `LOT: ${item.batchNumber} (#${item.serialIndex})` : 'Single Item'}
+											</td>
+											<td class="px-5 py-3.5 font-mono-tight text-[#8e8ea0]">
+												{truncate(item.id, 8, 4)}
+											</td>
+											<td class="px-5 py-3.5 font-mono-tight text-amber-300">
+												{item.openedAt ? formatDate(item.openedAt) : 'Logged on-chain'}
+											</td>
+											<td class="px-5 py-3.5 text-right">
+												<a
+													href="/verify/{item.id}"
+													class="px-3 py-1 rounded-full bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 font-display text-xs transition-all"
+												>
+													View Telemetry →
+												</a>
+											</td>
+										</tr>
+									{/each}
+								</tbody>
+							</table>
+						</div>
+					{/if}
 				</div>
 			{/if}
-		</div>
-	</main>
+
+		</main>
+	</div>
 </div>
+
+<!-- Global Web3 Connect Modal -->
+<PrivyAuthModal />
