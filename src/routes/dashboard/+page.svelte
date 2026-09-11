@@ -21,7 +21,9 @@
 		ExternalLink,
 		ArrowRight,
 		Activity,
-		Layers
+		Layers,
+		ChevronLeft,
+		ChevronRight
 	} from '@lucide/svelte';
 
 	let { data } = $props();
@@ -32,6 +34,10 @@
 	let statusFilter = $state<'all' | 'sealed' | 'opened'>('all');
 	let isMobileSidebarOpen = $state(false);
 	let copiedId = $state<string | null>(null);
+
+	// Pagination state
+	let currentPage = $state(1);
+	let pageSize = $state(10);
 
 	function formatDate(timestamp: Date | number) {
 		const date = timestamp instanceof Date ? timestamp : new Date(Number(timestamp) * 1000);
@@ -100,6 +106,69 @@
 	let tamperedProducts = $derived(
 		data.products.filter((p) => p.sealStatus === 'opened')
 	);
+
+	// Active list based on activeView
+	let currentList = $derived(
+		activeView === 'products'
+			? filteredProducts
+			: activeView === 'batches'
+				? filteredBatches
+				: tamperedProducts
+	);
+
+	// Auto-reset page when filters, query, tab, or page size change
+	$effect(() => {
+		searchQuery;
+		statusFilter;
+		activeView;
+		pageSize;
+		currentPage = 1;
+	});
+
+	let totalPages = $derived(Math.max(1, Math.ceil(currentList.length / pageSize)));
+
+	$effect(() => {
+		if (currentPage > totalPages) {
+			currentPage = totalPages;
+		}
+	});
+
+	let paginatedProducts = $derived(
+		filteredProducts.slice((currentPage - 1) * pageSize, currentPage * pageSize)
+	);
+
+	let paginatedBatches = $derived(
+		filteredBatches.slice((currentPage - 1) * pageSize, currentPage * pageSize)
+	);
+
+	let paginatedTampered = $derived(
+		tamperedProducts.slice((currentPage - 1) * pageSize, currentPage * pageSize)
+	);
+
+	let startIndex = $derived(currentList.length === 0 ? 0 : (currentPage - 1) * pageSize + 1);
+	let endIndex = $derived(Math.min(currentPage * pageSize, currentList.length));
+
+	let visiblePages = $derived.by(() => {
+		const pages: (number | string)[] = [];
+		if (totalPages <= 7) {
+			for (let i = 1; i <= totalPages; i++) pages.push(i);
+		} else {
+			pages.push(1);
+			if (currentPage > 3) pages.push('...');
+			const start = Math.max(2, currentPage - 1);
+			const end = Math.min(totalPages - 1, currentPage + 1);
+			for (let i = start; i <= end; i++) pages.push(i);
+			if (currentPage < totalPages - 2) pages.push('...');
+			pages.push(totalPages);
+		}
+		return pages;
+	});
+
+	function goToPage(p: number) {
+		if (p >= 1 && p <= totalPages) {
+			currentPage = p;
+		}
+	}
 </script>
 
 <svelte:head>
@@ -546,7 +615,7 @@
 									</tr>
 								</thead>
 								<tbody class="divide-y divide-white/[0.04]">
-									{#each filteredProducts as product}
+									{#each paginatedProducts as product}
 										<tr class="hover:bg-white/[0.02] transition-colors">
 											<td class="px-5 py-3.5 font-medium text-white">
 												<div class="font-bold text-sm text-white font-display">{product.name}</div>
@@ -609,6 +678,69 @@
 								</tbody>
 							</table>
 						</div>
+
+						<!-- Pagination Bar -->
+						{#if filteredProducts.length > 0}
+							<div class="px-5 py-3.5 border-t border-white/[0.06] bg-white/[0.01] flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs">
+								<!-- Left: Counter & Page Size Selector -->
+								<div class="flex items-center gap-4 text-[#8e8ea0] font-mono-tight">
+									<div>
+										Showing <span class="text-white font-semibold">{startIndex}</span>
+										–
+										<span class="text-white font-semibold">{endIndex}</span>
+										of <span class="text-white font-semibold">{filteredProducts.length}</span> records
+									</div>
+
+									<div class="hidden sm:flex items-center gap-1.5 border-l border-white/[0.08] pl-4">
+										<span>Rows:</span>
+										{#each [10, 25, 50] as size}
+											<button
+												onclick={() => (pageSize = size)}
+												class="px-2 py-0.5 rounded text-[11px] font-mono-tight transition-colors {pageSize === size ? 'bg-white text-[#08080e] font-bold shadow-sm' : 'text-[#7a7a8e] hover:text-white hover:bg-white/[0.05]'}"
+											>
+												{size}
+											</button>
+										{/each}
+									</div>
+								</div>
+
+								<!-- Right: Page Controls -->
+								{#if totalPages > 1}
+									<div class="flex items-center gap-1.5 self-end sm:self-auto font-mono-tight">
+										<button
+											onclick={() => goToPage(currentPage - 1)}
+											disabled={currentPage === 1}
+											class="p-1.5 rounded-lg border border-white/[0.08] bg-white/[0.02] text-[#8e8ea0] hover:text-white hover:bg-white/[0.06] disabled:opacity-30 disabled:pointer-events-none transition-all"
+											aria-label="Previous page"
+										>
+											<ChevronLeft size={14} />
+										</button>
+
+										{#each visiblePages as p}
+											{#if typeof p === 'number'}
+												<button
+													onclick={() => goToPage(p)}
+													class="w-7 h-7 rounded-lg text-xs transition-all {currentPage === p ? 'bg-white text-[#08080e] font-bold shadow-md' : 'text-[#8e8ea0] hover:text-white hover:bg-white/[0.05]'}"
+												>
+													{p}
+												</button>
+											{:else}
+												<span class="w-6 text-center text-[#606074]">…</span>
+											{/if}
+										{/each}
+
+										<button
+											onclick={() => goToPage(currentPage + 1)}
+											disabled={currentPage === totalPages}
+											class="p-1.5 rounded-lg border border-white/[0.08] bg-white/[0.02] text-[#8e8ea0] hover:text-white hover:bg-white/[0.06] disabled:opacity-30 disabled:pointer-events-none transition-all"
+											aria-label="Next page"
+										>
+											<ChevronRight size={14} />
+										</button>
+									</div>
+								{/if}
+							</div>
+						{/if}
 					{/if}
 				</div>
 
@@ -649,7 +781,7 @@
 									</tr>
 								</thead>
 								<tbody class="divide-y divide-white/[0.04]">
-									{#each filteredBatches as batch}
+									{#each paginatedBatches as batch}
 										<tr class="hover:bg-white/[0.02] transition-colors">
 											<td class="px-5 py-3.5 font-bold font-mono-tight text-indigo-400">
 												{batch.batchNumber}
@@ -698,6 +830,55 @@
 								</tbody>
 							</table>
 						</div>
+
+						<!-- Pagination Bar for Batches -->
+						{#if filteredBatches.length > 0}
+							<div class="px-5 py-3.5 border-t border-white/[0.06] bg-white/[0.01] flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs">
+								<div class="flex items-center gap-4 text-[#8e8ea0] font-mono-tight">
+									<div>
+										Showing <span class="text-white font-semibold">{startIndex}</span>
+										–
+										<span class="text-white font-semibold">{endIndex}</span>
+										of <span class="text-white font-semibold">{filteredBatches.length}</span> records
+									</div>
+								</div>
+
+								{#if totalPages > 1}
+									<div class="flex items-center gap-1.5 self-end sm:self-auto font-mono-tight">
+										<button
+											onclick={() => goToPage(currentPage - 1)}
+											disabled={currentPage === 1}
+											class="p-1.5 rounded-lg border border-white/[0.08] bg-white/[0.02] text-[#8e8ea0] hover:text-white hover:bg-white/[0.06] disabled:opacity-30 disabled:pointer-events-none transition-all"
+											aria-label="Previous page"
+										>
+											<ChevronLeft size={14} />
+										</button>
+
+										{#each visiblePages as p}
+											{#if typeof p === 'number'}
+												<button
+													onclick={() => goToPage(p)}
+													class="w-7 h-7 rounded-lg text-xs transition-all {currentPage === p ? 'bg-white text-[#08080e] font-bold shadow-md' : 'text-[#8e8ea0] hover:text-white hover:bg-white/[0.05]'}"
+												>
+													{p}
+												</button>
+											{:else}
+												<span class="w-6 text-center text-[#606074]">…</span>
+											{/if}
+										{/each}
+
+										<button
+											onclick={() => goToPage(currentPage + 1)}
+											disabled={currentPage === totalPages}
+											class="p-1.5 rounded-lg border border-white/[0.08] bg-white/[0.02] text-[#8e8ea0] hover:text-white hover:bg-white/[0.06] disabled:opacity-30 disabled:pointer-events-none transition-all"
+											aria-label="Next page"
+										>
+											<ChevronRight size={14} />
+										</button>
+									</div>
+								{/if}
+							</div>
+						{/if}
 					{/if}
 				</div>
 
@@ -740,7 +921,7 @@
 									</tr>
 								</thead>
 								<tbody class="divide-y divide-white/[0.04]">
-									{#each tamperedProducts as item}
+									{#each paginatedTampered as item}
 										<tr class="hover:bg-white/[0.02] transition-colors">
 											<td class="px-5 py-3.5 font-bold text-white font-display">
 												{item.name}
@@ -768,6 +949,55 @@
 								</tbody>
 							</table>
 						</div>
+
+						<!-- Pagination Bar for Breaches -->
+						{#if tamperedProducts.length > 0}
+							<div class="px-5 py-3.5 border-t border-white/[0.06] bg-white/[0.01] flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs">
+								<div class="flex items-center gap-4 text-[#8e8ea0] font-mono-tight">
+									<div>
+										Showing <span class="text-white font-semibold">{startIndex}</span>
+										–
+										<span class="text-white font-semibold">{endIndex}</span>
+										of <span class="text-white font-semibold">{tamperedProducts.length}</span> records
+									</div>
+								</div>
+
+								{#if totalPages > 1}
+									<div class="flex items-center gap-1.5 self-end sm:self-auto font-mono-tight">
+										<button
+											onclick={() => goToPage(currentPage - 1)}
+											disabled={currentPage === 1}
+											class="p-1.5 rounded-lg border border-white/[0.08] bg-white/[0.02] text-[#8e8ea0] hover:text-white hover:bg-white/[0.06] disabled:opacity-30 disabled:pointer-events-none transition-all"
+											aria-label="Previous page"
+										>
+											<ChevronLeft size={14} />
+										</button>
+
+										{#each visiblePages as p}
+											{#if typeof p === 'number'}
+												<button
+													onclick={() => goToPage(p)}
+													class="w-7 h-7 rounded-lg text-xs transition-all {currentPage === p ? 'bg-white text-[#08080e] font-bold shadow-md' : 'text-[#8e8ea0] hover:text-white hover:bg-white/[0.05]'}"
+												>
+													{p}
+												</button>
+											{:else}
+												<span class="w-6 text-center text-[#606074]">…</span>
+											{/if}
+										{/each}
+
+										<button
+											onclick={() => goToPage(currentPage + 1)}
+											disabled={currentPage === totalPages}
+											class="p-1.5 rounded-lg border border-white/[0.08] bg-white/[0.02] text-[#8e8ea0] hover:text-white hover:bg-white/[0.06] disabled:opacity-30 disabled:pointer-events-none transition-all"
+											aria-label="Next page"
+										>
+											<ChevronRight size={14} />
+										</button>
+									</div>
+								{/if}
+							</div>
+						{/if}
 					{/if}
 				</div>
 			{/if}
