@@ -102,6 +102,11 @@ export async function verifyProductOnChain(productId: string): Promise<{
   }
 }
 
+// In-memory cache to prevent high-latency RPC roundtrips
+let cachedBlockNumber = 0;
+let lastBlockFetchTime = 0;
+let cachedContractOwner: string | null = null;
+
 export async function getLiveBlockchainStatus(): Promise<{
   isConfigured: boolean;
   network: string;
@@ -112,20 +117,22 @@ export async function getLiveBlockchainStatus(): Promise<{
   explorerUrl: string;
 }> {
   const { provider, readContract } = getBlockchainInstance();
-  let blockNumber = 0;
-  let contractOwner = '';
+  const now = Date.now();
 
-  if (provider) {
+  // Cache block number for 15 seconds (Sepolia block time is ~12s)
+  if (provider && (now - lastBlockFetchTime > 15000 || cachedBlockNumber === 0)) {
     try {
-      blockNumber = await provider.getBlockNumber();
+      cachedBlockNumber = await provider.getBlockNumber();
+      lastBlockFetchTime = now;
     } catch (e) {
       console.warn('[Blockchain] Failed to get block number:', e);
     }
   }
 
-  if (readContract) {
+  // Cache contract owner indefinitely (owner is static on-chain)
+  if (readContract && !cachedContractOwner) {
     try {
-      contractOwner = await readContract.owner();
+      cachedContractOwner = await readContract.owner();
     } catch (e) {
       console.warn('[Blockchain] Failed to get contract owner:', e);
     }
@@ -135,9 +142,9 @@ export async function getLiveBlockchainStatus(): Promise<{
     isConfigured: isBlockchainConfigured(),
     network: 'Ethereum Sepolia',
     chainId: 11155111,
-    blockNumber,
+    blockNumber: cachedBlockNumber,
     contractAddress: CONTRACT_ADDRESS,
-    contractOwner,
+    contractOwner: cachedContractOwner || '',
     explorerUrl: EXPLORER_BASE_URL
   };
 }
@@ -152,30 +159,52 @@ export async function checkAddressAuthorization(addressOrEns: string): Promise<{
   const { provider, readContract } = getBlockchainInstance();
   let resolvedAddress = addressOrEns.trim();
   let ensName: string | null = null;
-  let isOwner = false;
-  let isAuthorized = false;
 
-  if (provider) {
+  // 1. Resolve forward ENS if input is a domain (e.g. vitalik.eth)
+  if (provider && resolvedAddress.includes('.')) {
     try {
-      if (resolvedAddress.includes('.')) {
-        const resolved = await provider.resolveName(resolvedAddress);
-        if (resolved) {
-          ensName = resolvedAddress;
-          resolvedAddress = resolved;
-        }
-      } else if (ethers.isAddress(resolvedAddress)) {
-        ensName = await provider.lookupAddress(resolvedAddress);
+      const resolved = await provider.resolveName(resolvedAddress);
+      if (resolved) {
+        ensName = resolvedAddress;
+        resolvedAddress = resolved;
       }
     } catch (e) {
-      // ENS lookup or resolution error
+      // Ignore resolution failure
     }
   }
 
-  if (readContract && ethers.isAddress(resolvedAddress)) {
+  // 2. Fetch reverse ENS, contract owner, and manufacturer authorization in PARALLEL
+  let isOwner = false;
+  let isAuthorized = false;
+
+  if (ethers.isAddress(resolvedAddress)) {
+    // Ensure contract owner is known
+    if (readContract && !cachedContractOwner) {
+      try {
+        cachedContractOwner = await readContract.owner();
+      } catch (e) {}
+    }
+
+    if (cachedContractOwner) {
+      isOwner = cachedContractOwner.toLowerCase() === resolvedAddress.toLowerCase();
+    }
+
+    // Parallel calls: authorization check + reverse ENS with 750ms timeout
+    const authPromise = readContract
+      ? readContract.authorizedManufacturers(resolvedAddress).catch(() => false)
+      : Promise.resolve(false);
+
+    const reverseEnsPromise = provider && !ensName
+      ? Promise.race([
+          provider.lookupAddress(resolvedAddress),
+          new Promise<null>((res) => setTimeout(() => res(null), 750))
+        ]).catch(() => null)
+      : Promise.resolve(ensName);
+
     try {
-      const owner = await readContract.owner();
-      isOwner = owner.toLowerCase() === resolvedAddress.toLowerCase();
-      isAuthorized = await readContract.authorizedManufacturers(resolvedAddress);
+      const [authResult, lookupResult] = await Promise.all([authPromise, reverseEnsPromise]);
+      isAuthorized = Boolean(authResult);
+      if (lookupResult) ensName = lookupResult;
     } catch (e) {
       console.warn('[Blockchain] Error checking authorization on-chain:', e);
     }
