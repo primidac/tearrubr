@@ -23,7 +23,7 @@
             <div class="hidden md:flex items-center gap-8">
                 <a href="#how-it-works" class="text-sm text-text-secondary hover:text-text-primary transition-colors">How it works</a>
                 <a href="#why-blockchain" class="text-sm text-text-secondary hover:text-text-primary transition-colors">Why blockchain</a>
-                <a href="/verify" class="text-sm text-text-secondary hover:text-text-primary transition-colors">Verify</a>
+                <a href="/verify" class="text-sm text-text-secondary hover:text-text-primary transition-colors">Public Ledger</a>
                 <a href="/dashboard" class="text-sm font-medium text-text-primary px-4 py-2 rounded-lg border border-border hover:border-text-tertiary hover:bg-surface-raised transition-all">Dashboard</a>
             </div>
         </div>
@@ -35,70 +35,21 @@
         <!-- Subtle top glow -->
         <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-accent/5 rounded-full blur-[120px] pointer-events-none"></div>
 
-        <div class="max-w-6xl mx-auto relative z-10">
-            <div class="grid lg:grid-cols-2 gap-16 items-center">
-                <!-- Left: Copy -->
-                <div in:fly={{ y: 20, duration: 600 }}>
-                    <p class="text-accent text-sm font-semibold tracking-wide uppercase mb-5">Product Authentication</p>
-                    <h1 class="text-5xl lg:text-6xl font-extrabold tracking-tight text-text-primary leading-[1.1] mb-6">
-                        Verify what's real<br />in a world full of<br />counterfeits.
-                    </h1>
-                    <p class="text-lg text-text-secondary leading-relaxed mb-10 max-w-lg">
-                        TearRubr gives physical products a verifiable digital identity backed by blockchain — so consumers can independently verify authenticity without trusting the seller.
-                    </p>
-                    <div class="flex items-center gap-4">
-                        <a href="/verify" class="px-6 py-3 rounded-lg bg-accent hover:bg-accent-muted text-white font-semibold text-sm glow-accent transition-all">
-                            Verify a Product
-                        </a>
-                        <a href="/dashboard" class="px-6 py-3 rounded-lg border border-border hover:border-text-tertiary text-text-secondary hover:text-text-primary font-medium text-sm transition-all">
-                            Manufacturer Portal
-                        </a>
-                    </div>
-                </div>
-
-                <!-- Right: Verification card mockup -->
-                <div in:fly={{ y: 20, duration: 600, delay: 150 }} class="hidden lg:block">
-                    <div class="bg-surface-raised border border-border rounded-xl p-6 max-w-sm ml-auto">
-                        <!-- Card header -->
-                        <div class="flex items-center gap-3 mb-6">
-                            <div class="w-10 h-10 rounded-full bg-success/10 flex items-center justify-center">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                                </svg>
-                            </div>
-                            <div>
-                                <p class="text-sm font-semibold text-success">AUTHENTIC</p>
-                                <p class="text-xs text-text-tertiary">Verified just now</p>
-                            </div>
-                        </div>
-                        <!-- Card body -->
-                        <div class="space-y-3 text-sm">
-                            <div class="flex justify-between py-2 border-b border-border-subtle">
-                                <span class="text-text-tertiary">Product</span>
-                                <span class="text-text-primary font-medium">Precision Watch S1</span>
-                            </div>
-                            <div class="flex justify-between py-2 border-b border-border-subtle">
-                                <span class="text-text-tertiary">Manufacturer</span>
-                                <span class="text-text-primary font-medium">Horologix Ltd.</span>
-                            </div>
-                            <div class="flex justify-between py-2 border-b border-border-subtle">
-                                <span class="text-text-tertiary">Product ID</span>
-                                <span class="text-accent font-mono-tight text-xs">a3f7…c9d1</span>
-                            </div>
-                            <div class="flex justify-between py-2">
-                                <span class="text-text-tertiary">On-chain</span>
-                                <span class="text-accent font-mono-tight text-xs flex items-center gap-1">
-                                    0x8b2e…4f01
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- Decorative code line beneath the card -->
-                    <div class="max-w-sm ml-auto mt-4 px-4 py-2.5 rounded-lg bg-surface border border-border-subtle font-mono-tight text-xs text-text-tertiary overflow-hidden">
-                        <span class="text-text-secondary">$</span> tearrubr verify <span class="text-accent">--id</span> a3f7b2d1-e89b-4c67-9a12-c9d1f4e08b3a
-                    </div>
-                </div>
+        <div class="max-w-3xl mx-auto relative z-10 text-center" in:fly={{ y: 20, duration: 600 }}>
+            <p class="text-accent text-sm font-semibold tracking-wide uppercase mb-5">Product Authentication</p>
+            <h1 class="text-5xl lg:text-6xl font-extrabold tracking-tight text-text-primary leading-[1.1] mb-6">
+                Verify what's real<br />in a world full of<br />counterfeits.
+            </h1>
+            <p class="text-lg text-text-secondary leading-relaxed mb-10 max-w-2xl mx-auto">
+                TearRubr gives physical products a verifiable digital identity backed by blockchain — so consumers can independently verify authenticity without trusting the seller.
+            </p>
+            <div class="flex items-center justify-center gap-4">
+                <a href="/verify" class="px-6 py-3 rounded-lg bg-accent hover:bg-accent-muted text-white font-semibold text-sm glow-accent transition-all">
+                    Public Ledger
+                </a>
+                <a href="/dashboard" class="px-6 py-3 rounded-lg border border-border hover:border-text-tertiary text-text-secondary hover:text-text-primary font-medium text-sm transition-all">
+                    Manufacturer Portal
+                </a>
             </div>
         </div>
     </section>
@@ -253,7 +204,7 @@
                     Register a Product
                 </a>
                 <a href="/verify" class="px-6 py-3 rounded-lg border border-border hover:border-text-tertiary text-text-secondary hover:text-text-primary font-medium text-sm transition-all">
-                    Try Verification
+                    Public Ledger
                 </a>
             </div>
         </div>
@@ -273,7 +224,7 @@
             <p class="text-xs text-text-tertiary">© 2026 TearRubr. All rights reserved.</p>
             <div class="flex gap-6 text-sm">
                 <a href="/dashboard" class="text-text-tertiary hover:text-text-primary transition-colors">Dashboard</a>
-                <a href="/verify" class="text-text-tertiary hover:text-text-primary transition-colors">Verify</a>
+                <a href="/verify" class="text-text-tertiary hover:text-text-primary transition-colors">Public Ledger</a>
                 <a href="https://github.com/primidac/tearrubr" target="_blank" rel="noopener noreferrer" class="text-text-tertiary hover:text-text-primary transition-colors">GitHub</a>
             </div>
         </div>

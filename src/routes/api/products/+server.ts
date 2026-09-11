@@ -2,7 +2,7 @@ import { json } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
 import { products } from '$lib/server/schema';
 import { v4 as uuidv4 } from 'uuid';
-import { eq } from 'drizzle-orm';
+import { isBlockchainConfigured, registerProductOnChain } from '$lib/server/blockchain';
 
 export async function POST({ request }) {
   try {
@@ -14,18 +14,31 @@ export async function POST({ request }) {
 
     const id = uuidv4();
     const now = new Date();
+    let blockchainTxHash: string | null = null;
+
+    if (isBlockchainConfigured()) {
+      try {
+        const onChain = await registerProductOnChain(id, data.manufacturer.trim());
+        blockchainTxHash = onChain.txHash;
+      } catch (chainErr: any) {
+        console.error('Blockchain registration error:', chainErr);
+        return json({ 
+          error: `On-chain registration failed: ${chainErr?.message || 'Transaction reverted'}` 
+        }, { status: 502 });
+      }
+    }
 
     await db.insert(products).values({
       id,
-      manufacturer: data.manufacturer,
-      name: data.name,
-      description: data.description || null,
-      blockchainTxHash: data.blockchainTxHash || null,
+      manufacturer: data.manufacturer.trim(),
+      name: data.name.trim(),
+      description: data.description ? data.description.trim() : null,
+      blockchainTxHash,
       createdAt: now,
       updatedAt: now
     });
 
-    return json({ success: true, id }, { status: 201 });
+    return json({ success: true, id, blockchainTxHash }, { status: 201 });
   } catch (error) {
     console.error('Error creating product:', error);
     return json({ error: 'Internal Server Error' }, { status: 500 });
