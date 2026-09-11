@@ -23,17 +23,26 @@
 		Activity,
 		Layers,
 		ChevronLeft,
-		ChevronRight
+		ChevronRight,
+		QrCode
 	} from '@lucide/svelte';
+	import QrCodeStudio from '$lib/components/QrCodeStudio.svelte';
 
 	let { data } = $props();
 
 	// Dashboard tab selection
-	let activeView = $state<'products' | 'batches' | 'alerts'>('products');
+	let activeView = $state<'products' | 'batches' | 'qr' | 'alerts'>('products');
 	let searchQuery = $state('');
 	let statusFilter = $state<'all' | 'sealed' | 'opened'>('all');
 	let isMobileSidebarOpen = $state(false);
 	let copiedId = $state<string | null>(null);
+	let selectedQrProductId = $state<string | null>(null);
+
+	function openQrStudioFor(productId: string) {
+		selectedQrProductId = productId;
+		activeView = 'qr';
+		isMobileSidebarOpen = false;
+	}
 
 	// Pagination state
 	let currentPage = $state(1);
@@ -113,7 +122,9 @@
 			? filteredProducts
 			: activeView === 'batches'
 				? filteredBatches
-				: tamperedProducts
+				: activeView === 'alerts'
+					? tamperedProducts
+					: []
 	);
 
 	// Auto-reset page when filters, query, tab, or page size change
@@ -276,6 +287,22 @@
 
 				<button
 					onclick={() => {
+						activeView = 'qr';
+						isMobileSidebarOpen = false;
+					}}
+					class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all {activeView === 'qr' ? 'bg-cyan-400 text-[#08080e] font-bold shadow-md' : 'text-[#8e8ea0] hover:text-white hover:bg-white/[0.04]'}"
+				>
+					<div class="flex items-center gap-2.5">
+						<QrCode size={16} class={activeView === 'qr' ? 'text-[#08080e]' : 'text-cyan-400'} />
+						<span>QR Code Studio</span>
+					</div>
+					<span class="px-1.5 py-0.5 rounded text-[10px] font-mono-tight uppercase {activeView === 'qr' ? 'bg-[#08080e]/20 text-[#08080e] font-bold' : 'bg-cyan-400/10 text-cyan-300 font-semibold'}">
+						Seal Gen
+					</span>
+				</button>
+
+				<button
+					onclick={() => {
 						activeView = 'alerts';
 						isMobileSidebarOpen = false;
 					}}
@@ -413,7 +440,13 @@
 					<span class="text-[#7a7a8e] hidden sm:inline">Manufacturer Workspace</span>
 					<span class="text-white/20 hidden sm:inline">/</span>
 					<span class="text-white font-bold truncate">
-						{activeView === 'products' ? 'Authenticity Ledger' : activeView === 'batches' ? 'Batch Rollups' : 'Tamper Telemetry'}
+						{activeView === 'products'
+							? 'Authenticity Ledger'
+							: activeView === 'batches'
+								? 'Batch Rollups'
+								: activeView === 'alerts'
+									? 'Tamper Telemetry'
+									: 'QR Code Seal Studio'}
 					</span>
 				</div>
 			</div>
@@ -528,16 +561,23 @@
 
 			<!-- Filter Bar & Search Controls -->
 			<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2 relative z-10">
-				<!-- Search input -->
-				<div class="relative flex-1 max-w-md">
-					<input
-						type="text"
-						bind:value={searchQuery}
-						placeholder="Search by product, lot number, or transaction hash..."
-						class="w-full pl-9 pr-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.08] hover:border-white/[0.15] text-xs text-white placeholder-[#606074] focus:outline-none focus:border-accent transition-all"
-					/>
-					<Search size={14} class="absolute left-3 top-3 text-[#606074]" />
-				</div>
+				<!-- Search input or QR mode banner -->
+				{#if activeView !== 'qr'}
+					<div class="relative flex-1 max-w-md">
+						<input
+							type="text"
+							bind:value={searchQuery}
+							placeholder="Search by product, lot number, or transaction hash..."
+							class="w-full pl-9 pr-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.08] hover:border-white/[0.15] text-xs text-white placeholder-[#606074] focus:outline-none focus:border-accent transition-all"
+						/>
+						<Search size={14} class="absolute left-3 top-3 text-[#606074]" />
+					</div>
+				{:else}
+					<div class="flex items-center gap-2 text-xs text-[#8e8ea0]">
+						<span class="px-2.5 py-1 rounded-lg bg-cyan-500/10 text-cyan-300 font-mono-tight border border-cyan-500/20 text-[11px] font-bold">Vector & Print Ready</span>
+						<span class="hidden sm:inline">Affix tamper-evident physical QR seals directly to packaging seams</span>
+					</div>
+				{/if}
 
 				<!-- View tabs -->
 				<div class="flex items-center gap-1.5 p-1 rounded-xl bg-white/[0.03] border border-white/[0.08] text-xs font-display self-start sm:self-auto">
@@ -561,6 +601,13 @@
 					>
 						<ShieldAlert size={13} />
 						<span>Breaches ({brokenSeals})</span>
+					</button>
+					<button
+						onclick={() => (activeView = 'qr')}
+						class="px-3.5 py-1.5 rounded-lg transition-all flex items-center gap-1.5 {activeView === 'qr' ? 'bg-cyan-400 text-[#08080e] font-bold shadow' : 'text-[#8e8ea0] hover:text-white'}"
+					>
+						<QrCode size={13} />
+						<span>QR Studio</span>
 					</button>
 				</div>
 			</div>
@@ -665,13 +712,23 @@
 												{/if}
 											</td>
 											<td class="px-5 py-3.5 text-right whitespace-nowrap">
-												<a
-													href="/verify/{product.id}"
-													class="px-3.5 py-1 rounded-full bg-white/10 hover:bg-white/20 text-white font-display text-xs transition-all inline-flex items-center gap-1.5 whitespace-nowrap shrink-0"
-												>
-													<span>Verify Proof</span>
-													<ArrowRight size={11} class="shrink-0" />
-												</a>
+												<div class="flex items-center justify-end gap-2">
+													<button
+														onclick={() => openQrStudioFor(product.id)}
+														class="px-2.5 py-1 rounded-full bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/25 font-display text-xs transition-all inline-flex items-center gap-1 whitespace-nowrap shrink-0"
+														title="Generate & Print Tamper-Evident QR Seal"
+													>
+														<QrCode size={11} class="shrink-0" />
+														<span>QR Seal</span>
+													</button>
+													<a
+														href="/verify/{product.id}"
+														class="px-3.5 py-1 rounded-full bg-white/10 hover:bg-white/20 text-white font-display text-xs transition-all inline-flex items-center gap-1.5 whitespace-nowrap shrink-0"
+													>
+														<span>Verify Proof</span>
+														<ArrowRight size={11} class="shrink-0" />
+													</a>
+												</div>
 											</td>
 										</tr>
 									{/each}
@@ -885,7 +942,7 @@
 			<!-- ================================================================= -->
 			<!-- VIEW 3: PHYSICAL SEAL BREACH TELEMETRY -->
 			<!-- ================================================================= -->
-			{:else}
+			{:else if activeView === 'alerts'}
 				<div class="rounded-2xl bg-[#0c0c16]/90 border border-white/[0.08] backdrop-blur-2xl shadow-xl overflow-hidden relative z-10" in:fade={{ duration: 150 }}>
 					<div class="p-5 border-b border-white/[0.06] flex items-center justify-between">
 						<div>
@@ -999,6 +1056,18 @@
 							</div>
 						{/if}
 					{/if}
+				</div>
+
+			<!-- ================================================================= -->
+			<!-- VIEW 4: QR CODE STUDIO -->
+			<!-- ================================================================= -->
+			{:else if activeView === 'qr'}
+				<div in:fade={{ duration: 150 }}>
+					<QrCodeStudio
+						products={data.products}
+						batches={data.batches || []}
+						initialProductId={selectedQrProductId}
+					/>
 				</div>
 			{/if}
 
