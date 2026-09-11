@@ -1,5 +1,6 @@
 <script lang="ts">
     import { fly } from 'svelte/transition';
+    import Logo from '$lib/components/Logo.svelte';
 </script>
 
 <svelte:head>
@@ -13,11 +14,7 @@
     <nav class="fixed top-0 left-0 right-0 z-50 border-b border-border bg-[#08080e]/80 backdrop-blur-md">
         <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
             <a href="/" class="flex items-center gap-2.5">
-                <div class="w-7 h-7 rounded-md bg-accent flex items-center justify-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                    </svg>
-                </div>
+                <Logo size={28} />
                 <span class="text-lg font-bold tracking-tight text-text-primary">TearRubr</span>
             </a>
             <div class="hidden md:flex items-center gap-8">
@@ -214,11 +211,7 @@
     <footer class="border-t border-border py-10 px-6">
         <div class="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
             <div class="flex items-center gap-2.5">
-                <div class="w-6 h-6 rounded bg-accent flex items-center justify-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                    </svg>
-                </div>
+                <Logo size={22} />
                 <span class="text-sm font-semibold text-text-primary">TearRubr</span>
             </div>
             <p class="text-xs text-text-tertiary">© 2026 TearRubr. All rights reserved.</p>
