@@ -2,6 +2,7 @@
 	import Logo from './Logo.svelte';
 	import PrivyAuthModal from './PrivyAuthModal.svelte';
 	import { auth } from '$lib/auth.svelte';
+	import { Menu, X, Check, Wallet, LayoutDashboard } from '@lucide/svelte';
 
 	interface Props {
 		currentPath?: string;
@@ -15,21 +16,21 @@
 		auth.openModal();
 	}
 
-	function formatAddress(addr: string | null) {
+	function formatAddress(addr: string | null, short = false) {
 		if (!addr) return '';
-		if (addr.length <= 12) return addr;
-		return `${addr.slice(0, 6)}…${addr.slice(-4)}`;
+		if (addr.length <= 10) return addr;
+		return short ? `${addr.slice(0, 4)}…${addr.slice(-2)}` : `${addr.slice(0, 6)}…${addr.slice(-4)}`;
 	}
 </script>
 
-<header class="fixed top-4 sm:top-5 left-0 right-0 z-50 flex justify-center px-4">
+<header class="fixed top-3 sm:top-5 left-0 right-0 z-50 flex justify-center px-3 sm:px-4">
 	<nav
-		class="max-w-5xl w-full mx-auto px-4 sm:px-5 py-2.5 rounded-full bg-[#0a0a14]/80 backdrop-blur-xl border border-white/[0.08] shadow-[0_8px_32px_rgba(0,0,0,0.45)] flex items-center justify-between transition-all duration-200"
+		class="max-w-5xl w-full mx-auto px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-full bg-[#0a0a14]/85 backdrop-blur-xl border border-white/[0.08] shadow-[0_8px_32px_rgba(0,0,0,0.5)] flex items-center justify-between transition-all duration-200"
 	>
 		<!-- Brand -->
-		<a href="/" class="flex items-center gap-2.5 shrink-0">
-			<Logo size={24} />
-			<span class="text-[15px] font-bold tracking-tight text-white font-display">TearRubr</span>
+		<a href="/" class="flex items-center gap-2 sm:gap-2.5 shrink-0">
+			<Logo size={22} />
+			<span class="text-sm sm:text-[15px] font-bold tracking-tight text-white font-display">TearRubr</span>
 		</a>
 
 		<!-- Desktop Nav Links -->
@@ -51,36 +52,41 @@
 		</div>
 
 		<!-- Right Action & Identity Dock -->
-		<div class="flex items-center gap-2 sm:gap-2.5">
+		<div class="flex items-center gap-1.5 sm:gap-2.5">
 			<!-- Real Wallet Connection Pill -->
 			{#if auth.session.isConnected}
 				<button
 					onclick={openAuth}
-					class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-xs font-mono-tight text-white transition-all"
+					class="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-[11px] sm:text-xs font-mono-tight text-white transition-all whitespace-nowrap shrink-0"
 					title="Connected: {auth.session.walletAddress}"
 				>
-					<span class="w-1.5 h-1.5 rounded-full {auth.session.isVerifiedManufacturer ? 'bg-emerald-400' : 'bg-indigo-400'}"></span>
-					<span class="font-medium">
-						{auth.session.ensName || formatAddress(auth.session.walletAddress)}
+					<span class="w-1.5 h-1.5 rounded-full {auth.session.isVerifiedManufacturer ? 'bg-emerald-400' : 'bg-indigo-400'} shrink-0"></span>
+					<!-- Compact on mobile, standard on sm+ -->
+					<span class="sm:hidden font-medium whitespace-nowrap">
+						{formatAddress(auth.session.walletAddress, true)}
+					</span>
+					<span class="hidden sm:inline font-medium whitespace-nowrap">
+						{auth.session.ensName || formatAddress(auth.session.walletAddress, false)}
 					</span>
 					{#if auth.session.isVerifiedManufacturer}
-						<span class="text-emerald-400 text-[10px]" title="On-Chain Verified Manufacturer">✓</span>
+						<Check size={11} class="text-emerald-400 shrink-0" />
 					{/if}
 				</button>
 			{:else}
 				<button
 					onclick={openAuth}
-					class="px-3.5 py-1.5 rounded-full bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-xs font-medium text-white transition-all font-display flex items-center gap-1.5"
+					class="px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-full bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-[11px] sm:text-xs font-medium text-white transition-all font-display flex items-center gap-1.5 whitespace-nowrap shrink-0"
 				>
-					<span class="w-1.5 h-1.5 rounded-full bg-[#8e8ea0]"></span>
-					<span>Connect Wallet</span>
+					<span class="w-1.5 h-1.5 rounded-full bg-[#8e8ea0] shrink-0"></span>
+					<span class="hidden sm:inline">Connect Wallet</span>
+					<span class="sm:hidden">Connect</span>
 				</button>
 			{/if}
 
 			<!-- Dashboard Pill Button -->
 			<a
 				href="/dashboard"
-				class="rounded-full px-4 sm:px-5 py-1.5 text-xs font-semibold bg-white text-[#08080e] hover:bg-white/90 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-sm font-display shrink-0"
+				class="rounded-full px-3 sm:px-5 py-1 sm:py-1.5 text-[11px] sm:text-xs font-semibold bg-white text-[#08080e] hover:bg-white/90 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-sm font-display shrink-0 whitespace-nowrap"
 			>
 				Dashboard
 			</a>
@@ -88,12 +94,14 @@
 			<!-- Mobile menu toggle -->
 			<button
 				onclick={() => (isMobileMenuOpen = !isMobileMenuOpen)}
-				class="md:hidden p-1.5 rounded-full bg-white/5 text-[#9494a8] hover:text-white"
+				class="md:hidden p-1.5 rounded-full bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-white transition-colors shrink-0"
 				aria-label="Toggle navigation"
 			>
-				<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-				</svg>
+				{#if isMobileMenuOpen}
+					<X size={15} />
+				{:else}
+					<Menu size={15} />
+				{/if}
 			</button>
 		</div>
 	</nav>
@@ -101,45 +109,82 @@
 	<!-- Mobile Dropdown -->
 	{#if isMobileMenuOpen}
 		<div
-			class="md:hidden fixed top-16 left-4 right-4 p-4 rounded-2xl bg-[#0c0c16]/95 backdrop-blur-2xl border border-white/10 shadow-2xl space-y-3 text-xs"
+			class="md:hidden fixed top-16 left-3 right-3 p-4 rounded-2xl bg-[#0c0c16]/95 backdrop-blur-2xl border border-white/10 shadow-2xl space-y-2.5 text-xs z-50 animate-in fade-in slide-in-from-top-2 duration-150"
 		>
-			<a
-				href="/verify"
-				onclick={() => (isMobileMenuOpen = false)}
-				class="block py-2 text-[#9494a8] hover:text-white"
-			>
-				Public Ledger
-			</a>
-			<a
-				href="/register"
-				onclick={() => (isMobileMenuOpen = false)}
-				class="block py-2 text-[#9494a8] hover:text-white"
-			>
-				Register Product / Batch
-			</a>
-			<a
-				href="/#how-it-works"
-				onclick={() => (isMobileMenuOpen = false)}
-				class="block py-2 text-[#9494a8] hover:text-white"
-			>
-				How It Works
-			</a>
-			<a
-				href="/#why-blockchain"
-				onclick={() => (isMobileMenuOpen = false)}
-				class="block py-2 text-[#9494a8] hover:text-white"
-			>
-				Why Blockchain
-			</a>
-			<button
-				onclick={() => {
-					isMobileMenuOpen = false;
-					openAuth();
-				}}
-				class="w-full text-left py-2 text-accent font-semibold"
-			>
-				{auth.session.isConnected ? `Connected: ${auth.session.ensName || formatAddress(auth.session.walletAddress)}` : 'Connect Web3 Wallet'}
-			</button>
+			{#if auth.session.isConnected}
+				<div class="p-3 rounded-xl bg-white/[0.03] border border-white/[0.08] flex items-center justify-between gap-2">
+					<div class="space-y-0.5 truncate">
+						<div class="text-[10px] font-mono-tight text-[#7a7a8e] uppercase flex items-center gap-1">
+							<span class="w-1.5 h-1.5 rounded-full {auth.session.isVerifiedManufacturer ? 'bg-emerald-400' : 'bg-indigo-400'}"></span>
+							<span>{auth.session.isVerifiedManufacturer ? 'Verified Manufacturer' : 'Connected Wallet'}</span>
+						</div>
+						<div class="font-mono-tight text-white text-xs truncate">
+							{auth.session.walletAddress}
+						</div>
+					</div>
+					<button
+						onclick={() => {
+							isMobileMenuOpen = false;
+							openAuth();
+						}}
+						class="px-2 py-1 rounded-lg bg-white/[0.06] text-[10px] text-accent hover:underline shrink-0"
+					>
+						Manage
+					</button>
+				</div>
+			{/if}
+
+			<div class="divide-y divide-white/[0.05]">
+				<a
+					href="/verify"
+					onclick={() => (isMobileMenuOpen = false)}
+					class="block py-2.5 text-[#9494a8] hover:text-white font-display text-xs"
+				>
+					Public Ledger
+				</a>
+				<a
+					href="/register"
+					onclick={() => (isMobileMenuOpen = false)}
+					class="block py-2.5 text-[#9494a8] hover:text-white font-display text-xs"
+				>
+					Register Product / Batch
+				</a>
+				<a
+					href="/dashboard"
+					onclick={() => (isMobileMenuOpen = false)}
+					class="block py-2.5 text-[#9494a8] hover:text-white font-display text-xs flex items-center justify-between"
+				>
+					<span>Manufacturer Dashboard</span>
+					<LayoutDashboard size={13} class="text-white/40" />
+				</a>
+				<a
+					href="/#how-it-works"
+					onclick={() => (isMobileMenuOpen = false)}
+					class="block py-2.5 text-[#9494a8] hover:text-white font-display text-xs"
+				>
+					How It Works
+				</a>
+				<a
+					href="/#why-blockchain"
+					onclick={() => (isMobileMenuOpen = false)}
+					class="block py-2.5 text-[#9494a8] hover:text-white font-display text-xs"
+				>
+					Why Blockchain
+				</a>
+			</div>
+
+			{#if !auth.session.isConnected}
+				<button
+					onclick={() => {
+						isMobileMenuOpen = false;
+						openAuth();
+					}}
+					class="w-full py-2.5 rounded-xl bg-white text-[#08080e] font-bold font-display text-xs transition-all shadow flex items-center justify-center gap-2 mt-2"
+				>
+					<Wallet size={14} />
+					<span>Connect Web3 Wallet</span>
+				</button>
+			{/if}
 		</div>
 	{/if}
 </header>
