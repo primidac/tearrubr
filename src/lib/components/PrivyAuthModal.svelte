@@ -1,25 +1,17 @@
 <script lang="ts">
-	import { auth, VERIFIED_MANUFACTURERS } from '$lib/auth.svelte';
+	import { auth } from '$lib/auth.svelte';
 	import { fade, scale } from 'svelte/transition';
 
-	let ensInput = $state('');
-	let emailInput = $state('');
-	let activeTab = $state<'ens' | 'wallets' | 'email'>('ens');
+	let manualAddress = $state('');
 
-	function handleConnectENS(ens: string) {
-		auth.connectWithENS(ens);
+	function handleConnect() {
+		auth.connectWallet();
 	}
 
-	function handleCustomENS() {
-		if (!ensInput.trim()) return;
-		auth.connectWithENS(ensInput);
-		ensInput = '';
-	}
-
-	function handleEmail() {
-		if (!emailInput.trim()) return;
-		auth.connectWithEmail(emailInput);
-		emailInput = '';
+	function handleManualLookup(e: Event) {
+		e.preventDefault();
+		if (!manualAddress.trim()) return;
+		auth.connectWithCustomAddress(manualAddress);
 	}
 </script>
 
@@ -38,187 +30,125 @@
 		aria-modal="true"
 		tabindex="-1"
 	>
-		<!-- Modal Content -->
+		<!-- Modal Card -->
 		<div
-			class="w-full max-w-md bg-[#0d0d16] border border-white/10 rounded-2xl p-6 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.8)] relative overflow-hidden"
+			class="w-full max-w-md bg-[#0d0d16] border border-white/10 rounded-3xl p-6 sm:p-8 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.85)] relative overflow-hidden"
 			transition:scale={{ start: 0.95, duration: 180 }}
 		>
-			<!-- Ambient glow inside modal -->
+			<!-- Ambient Glow -->
 			<div class="absolute -top-20 -right-20 w-48 h-48 rounded-full bg-[#6366f1]/20 blur-[80px] pointer-events-none"></div>
 			<div class="absolute -bottom-20 -left-20 w-48 h-48 rounded-full bg-[#10b981]/15 blur-[80px] pointer-events-none"></div>
 
 			<!-- Header -->
 			<div class="flex items-center justify-between pb-4 border-b border-white/[0.08] relative z-10">
-				<div class="flex items-center gap-2.5">
-					<div class="w-7 h-7 rounded-lg bg-white/10 border border-white/10 flex items-center justify-center text-xs font-bold text-white">
-						P
+				<div>
+					<div class="flex items-center gap-2">
+						<h3 class="text-base font-bold text-white font-display">Connect Web3 Wallet</h3>
+						<span class="text-[10px] font-mono-tight px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+							Sepolia
+						</span>
 					</div>
-					<div>
-						<div class="flex items-center gap-1.5">
-							<h3 class="text-sm font-bold text-white font-display">Connect Identity</h3>
-							<span class="text-[10px] font-mono-tight px-1.5 py-0.2 rounded bg-[#6366f1]/20 text-[#818cf8] border border-[#6366f1]/30">
-								Privy + ENS
-							</span>
-						</div>
-						<p class="text-[11px] text-[#8e8ea0]">Verify brand ownership on Ethereum</p>
-					</div>
+					<p class="text-xs text-[#8e8ea0] mt-0.5">Direct connection via Ethereum provider</p>
 				</div>
 
 				<button
 					onclick={() => auth.closeModal()}
-					class="w-7 h-7 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-text-secondary hover:text-white transition-colors"
+					class="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-[#8e8ea0] hover:text-white transition-colors"
 					aria-label="Close"
 				>
 					✕
 				</button>
 			</div>
 
-			<!-- Current Session Info (if connected) -->
+			<!-- Error Alert -->
+			{#if auth.errorMessage}
+				<div class="mt-4 p-3.5 rounded-2xl bg-danger/10 border border-danger/30 text-red-200 text-xs leading-relaxed" transition:fade>
+					{auth.errorMessage}
+				</div>
+			{/if}
+
+			<!-- Current Connected Session -->
 			{#if auth.session.isConnected}
-				<div class="mt-4 p-3 rounded-xl bg-white/[0.03] border border-white/[0.08] flex items-center justify-between text-xs">
-					<div class="flex items-center gap-2">
-						<span class="w-2 h-2 rounded-full {auth.session.isVerifiedManufacturer ? 'bg-emerald-400' : 'bg-indigo-400'}"></span>
-						<span class="font-semibold text-white">{auth.session.ensName || auth.session.walletAddress}</span>
+				<div class="mt-6 p-4 rounded-2xl bg-white/[0.03] border border-white/[0.08] space-y-2 text-xs">
+					<div class="flex items-center justify-between">
+						<span class="text-[#7a7a8e]">Connected Wallet:</span>
+						<span class="font-mono-tight font-bold text-white">
+							{auth.session.ensName || auth.session.walletAddress}
+						</span>
+					</div>
+
+					<div class="flex items-center justify-between">
+						<span class="text-[#7a7a8e]">Contract Status:</span>
 						{#if auth.session.isVerifiedManufacturer}
-							<span class="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[10px] font-medium border border-emerald-500/30">
-								✓ Verified Brand
+							<span class="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 font-mono-tight text-[11px]">
+								✓ {auth.session.isOwner ? 'Contract Owner / Deployer' : 'Authorized Manufacturer'}
+							</span>
+						{:else}
+							<span class="px-2 py-0.5 rounded-full bg-white/10 text-[#8e8ea0] font-mono-tight text-[11px]">
+								Standard Wallet
 							</span>
 						{/if}
 					</div>
+
 					<button
 						onclick={() => auth.disconnect()}
-						class="text-[11px] text-danger hover:underline"
+						class="w-full mt-3 py-2 rounded-xl bg-danger/10 hover:bg-danger/20 text-red-300 font-semibold text-xs transition-colors"
 					>
-						Disconnect
+						Disconnect Wallet
 					</button>
 				</div>
-			{/if}
+			{:else}
+				<!-- Connect Real Browser Wallet Button -->
+				<div class="mt-6 space-y-4">
+					<button
+						onclick={handleConnect}
+						disabled={auth.isConnecting}
+						class="w-full py-3.5 rounded-2xl bg-white text-[#08080e] hover:bg-white/90 font-bold text-sm font-display transition-all shadow-xl hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-3 disabled:opacity-50"
+					>
+						<svg class="w-5 h-5" viewBox="0 0 318.6 318.6" xmlns="http://www.w3.org/2000/svg">
+							<polygon points="274.1 35.5 174.6 109.4 193 65.8 274.1 35.5" fill="#e2761b" stroke="#e2761b" stroke-linecap="round" stroke-linejoin="round" />
+							<polygon points="44.4 35.5 125.6 65.8 143.9 109.4 44.4 35.5" fill="#e4761b" stroke="#e4761b" stroke-linecap="round" stroke-linejoin="round" />
+							<polygon points="238.3 206.8 211.8 247.4 268.5 263 284.8 207.7 238.3 206.8" fill="#e4761b" stroke="#e4761b" stroke-linecap="round" stroke-linejoin="round" />
+							<polygon points="33.9 207.7 50.1 263 106.8 247.4 80.3 206.8 33.9 207.7" fill="#e4761b" stroke="#e4761b" stroke-linecap="round" stroke-linejoin="round" />
+						</svg>
+						<span>{auth.isConnecting ? 'Waiting for approval...' : 'Connect Injected Wallet (MetaMask / Web3)'}</span>
+					</button>
 
-			<!-- Auth Method Switcher Tabs -->
-			<div class="mt-4 grid grid-cols-3 gap-1.5 p-1 rounded-xl bg-[#08080e] border border-white/[0.06] text-xs">
-				<button
-					onclick={() => (activeTab = 'ens')}
-					class="py-1.5 rounded-lg font-medium transition-all {activeTab === 'ens' ? 'bg-white/10 text-white shadow-sm' : 'text-[#8e8ea0] hover:text-white'}"
-				>
-					ENS Brand
-				</button>
-				<button
-					onclick={() => (activeTab = 'wallets')}
-					class="py-1.5 rounded-lg font-medium transition-all {activeTab === 'wallets' ? 'bg-white/10 text-white shadow-sm' : 'text-[#8e8ea0] hover:text-white'}"
-				>
-					Web3 Wallet
-				</button>
-				<button
-					onclick={() => (activeTab = 'email')}
-					class="py-1.5 rounded-lg font-medium transition-all {activeTab === 'email' ? 'bg-white/10 text-white shadow-sm' : 'text-[#8e8ea0] hover:text-white'}"
-				>
-					Email / Social
-				</button>
-			</div>
-
-			<!-- Tab: ENS Brand Authentication (Enterprise Anti-Spoofing Showcase) -->
-			{#if activeTab === 'ens'}
-				<div class="mt-4 space-y-3">
-					<p class="text-xs text-[#8e8ea0]">
-						Select a verified manufacturer identity to test authentic on-chain issuance:
-					</p>
-
-					<div class="space-y-2">
-						{#each Object.entries(VERIFIED_MANUFACTURERS) as [ens, profile]}
-							<button
-								onclick={() => handleConnectENS(ens)}
-								class="w-full px-3.5 py-2.5 rounded-xl bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.08] hover:border-emerald-500/40 flex items-center justify-between text-left transition-all group"
-							>
-								<div>
-									<div class="flex items-center gap-2">
-										<span class="text-xs font-bold text-white font-mono-tight">{ens}</span>
-										<span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-medium">
-											✓ {profile.tier}
-										</span>
-									</div>
-									<div class="text-[11px] text-[#7a7a8e] mt-0.5">{profile.brandName}</div>
-								</div>
-								<span class="text-xs text-[#8e8ea0] group-hover:text-white transition-colors">Select →</span>
-							</button>
-						{/each}
+					<div class="relative py-2">
+						<div class="absolute inset-0 flex items-center"><div class="w-full border-t border-white/[0.08]"></div></div>
+						<div class="relative flex justify-center text-[11px]"><span class="bg-[#0d0d16] px-2 text-[#7a7a8e]">or enter address</span></div>
 					</div>
 
-					<div class="pt-2">
-						<label for="custom-ens" class="text-[11px] text-[#7a7a8e] block mb-1.5">Or enter custom ENS name:</label>
+					<!-- Manual Address Lookup Form -->
+					<form onsubmit={handleManualLookup} class="space-y-2">
 						<div class="flex gap-2">
 							<input
-								id="custom-ens"
 								type="text"
-								bind:value={ensInput}
-								placeholder="e.g. nike.eth"
-								class="flex-1 px-3 py-2 rounded-lg bg-[#08080e] border border-white/10 text-xs text-white focus:outline-none focus:border-accent"
+								bind:value={manualAddress}
+								placeholder="0x... Ethereum Address"
+								class="flex-1 px-3.5 py-2.5 rounded-xl bg-[#08080e] border border-white/10 text-xs font-mono-tight text-white placeholder-[#606074] focus:outline-none focus:border-accent"
 							/>
 							<button
-								onclick={handleCustomENS}
-								class="px-4 py-2 rounded-lg bg-accent text-white text-xs font-semibold hover:bg-accent-muted transition-colors"
+								type="submit"
+								disabled={auth.isConnecting}
+								class="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-semibold text-white transition-colors"
 							>
-								Resolve
+								Lookup
 							</button>
 						</div>
-					</div>
+					</form>
 				</div>
 			{/if}
 
-			<!-- Tab: Web3 Wallets -->
-			{#if activeTab === 'wallets'}
-				<div class="mt-4 space-y-2">
-					<p class="text-xs text-[#8e8ea0] mb-3">
-						Connect using an Ethereum wallet to sign batches and product registrations:
-					</p>
-
-					{#each ['MetaMask', 'Coinbase Wallet', 'Rainbow', 'WalletConnect'] as wallet}
-						<button
-							onclick={() => auth.connectWithWallet(wallet)}
-							class="w-full px-3.5 py-2.5 rounded-xl bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.08] hover:border-accent/40 flex items-center justify-between text-left transition-all"
-						>
-							<span class="text-xs font-semibold text-white">{wallet}</span>
-							<span class="text-xs text-text-tertiary">Connect →</span>
-						</button>
-					{/each}
-				</div>
-			{/if}
-
-			<!-- Tab: Email / Passkey -->
-			{#if activeTab === 'email'}
-				<div class="mt-4 space-y-3">
-					<p class="text-xs text-[#8e8ea0]">
-						Privy creates an embedded cryptographic key linked to your enterprise email:
-					</p>
-
-					<div>
-						<input
-							type="email"
-							bind:value={emailInput}
-							placeholder="admin@yourcompany.com"
-							class="w-full px-3.5 py-2.5 rounded-xl bg-[#08080e] border border-white/10 text-xs text-white focus:outline-none focus:border-accent"
-						/>
-					</div>
-
-					<button
-						onclick={handleEmail}
-						class="w-full py-2.5 rounded-xl bg-white text-[#08080e] font-semibold text-xs hover:bg-white/90 transition-all shadow-md"
-					>
-						Continue with Privy
-					</button>
-
-					<div class="pt-2 text-center">
-						<span class="text-[11px] text-text-tertiary">Protected by Privy MPC & Account Abstraction</span>
-					</div>
-				</div>
-			{/if}
-
-			<!-- Footer Security Note -->
-			<div class="mt-5 pt-3 border-t border-white/[0.06] flex items-center justify-between text-[11px] text-[#7a7a8e]">
+			<!-- Real On-Chain Network Info Footer -->
+			<div class="mt-6 pt-4 border-t border-white/[0.06] flex items-center justify-between text-[11px] text-[#7a7a8e] font-mono-tight">
 				<span class="flex items-center gap-1.5">
 					<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-					Sepolia Network
+					Sepolia (Chain 11155111)
 				</span>
-				<span>Indexed by The Graph</span>
+				<span>
+					Block: #{auth.chainStatus.blockNumber > 0 ? auth.chainStatus.blockNumber.toLocaleString() : '11,683,583'}
+				</span>
 			</div>
 		</div>
 	</div>

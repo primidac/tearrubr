@@ -8,6 +8,8 @@ export const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS || '0xa34C7D37BB2bf
 export const EXPLORER_BASE_URL = 'https://sepolia.etherscan.io';
 
 const TEARRUBR_ABI = [
+  'function owner() external view returns (address)',
+  'function authorizedManufacturers(address) external view returns (bool)',
   'function registerProduct(string memory productId, string memory manufacturer) external',
   'function updateProductStatus(string memory productId, bool isAuthentic) external',
   'function verifyProduct(string memory productId) external view returns (bool isRegistered, bool isAuthentic, string memory manufacturer)',
@@ -99,3 +101,92 @@ export async function verifyProductOnChain(productId: string): Promise<{
     };
   }
 }
+
+export async function getLiveBlockchainStatus(): Promise<{
+  isConfigured: boolean;
+  network: string;
+  chainId: number;
+  blockNumber: number;
+  contractAddress: string;
+  contractOwner: string;
+  explorerUrl: string;
+}> {
+  const { provider, readContract } = getBlockchainInstance();
+  let blockNumber = 0;
+  let contractOwner = '';
+
+  if (provider) {
+    try {
+      blockNumber = await provider.getBlockNumber();
+    } catch (e) {
+      console.warn('[Blockchain] Failed to get block number:', e);
+    }
+  }
+
+  if (readContract) {
+    try {
+      contractOwner = await readContract.owner();
+    } catch (e) {
+      console.warn('[Blockchain] Failed to get contract owner:', e);
+    }
+  }
+
+  return {
+    isConfigured: isBlockchainConfigured(),
+    network: 'Ethereum Sepolia',
+    chainId: 11155111,
+    blockNumber,
+    contractAddress: CONTRACT_ADDRESS,
+    contractOwner,
+    explorerUrl: EXPLORER_BASE_URL
+  };
+}
+
+export async function checkAddressAuthorization(addressOrEns: string): Promise<{
+  address: string;
+  ensName: string | null;
+  isOwner: boolean;
+  isAuthorized: boolean;
+  isVerifiedManufacturer: boolean;
+}> {
+  const { provider, readContract } = getBlockchainInstance();
+  let resolvedAddress = addressOrEns.trim();
+  let ensName: string | null = null;
+  let isOwner = false;
+  let isAuthorized = false;
+
+  if (provider) {
+    try {
+      if (resolvedAddress.includes('.')) {
+        const resolved = await provider.resolveName(resolvedAddress);
+        if (resolved) {
+          ensName = resolvedAddress;
+          resolvedAddress = resolved;
+        }
+      } else if (ethers.isAddress(resolvedAddress)) {
+        ensName = await provider.lookupAddress(resolvedAddress);
+      }
+    } catch (e) {
+      // ENS lookup or resolution error
+    }
+  }
+
+  if (readContract && ethers.isAddress(resolvedAddress)) {
+    try {
+      const owner = await readContract.owner();
+      isOwner = owner.toLowerCase() === resolvedAddress.toLowerCase();
+      isAuthorized = await readContract.authorizedManufacturers(resolvedAddress);
+    } catch (e) {
+      console.warn('[Blockchain] Error checking authorization on-chain:', e);
+    }
+  }
+
+  return {
+    address: resolvedAddress,
+    ensName,
+    isOwner,
+    isAuthorized,
+    isVerifiedManufacturer: isOwner || isAuthorized
+  };
+}
+

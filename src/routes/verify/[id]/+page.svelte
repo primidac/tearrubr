@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { fly, fade } from 'svelte/transition';
 	import Navbar from '$lib/components/Navbar.svelte';
-	import { auth, VERIFIED_MANUFACTURERS } from '$lib/auth.svelte';
+	import { auth } from '$lib/auth.svelte';
 
 	let { data } = $props();
 
@@ -13,26 +13,6 @@
 		sealStatus = data.product?.sealStatus || 'sealed';
 		openedAt = data.product?.openedAt || null;
 	});
-
-	// Check verified manufacturer status via ENS
-	function getVerifiedInfo(manufacturerName: string) {
-		const norm = manufacturerName.toLowerCase();
-		if (norm.includes('coca') || norm.includes('coke')) {
-			return VERIFIED_MANUFACTURERS['cocacola.eth'];
-		}
-		if (norm.includes('louis') || norm.includes('vuitton') || norm.includes('lvmh')) {
-			return VERIFIED_MANUFACTURERS['lvmh.eth'];
-		}
-		if (norm.includes('apple')) {
-			return VERIFIED_MANUFACTURERS['apple.eth'];
-		}
-		if (norm.includes('aura')) {
-			return VERIFIED_MANUFACTURERS['aura.eth'];
-		}
-		return null;
-	}
-
-	let verifiedProfile = $derived(data.product ? getVerifiedInfo(data.product.manufacturer) : null);
 
 	function formatDate(timestamp: Date | string | number | null | undefined) {
 		if (!timestamp) return 'Just now';
@@ -65,7 +45,7 @@
 </script>
 
 <svelte:head>
-	<title>{data.product ? 'Authentic Product' : 'Not Verified'} | TearRubr</title>
+	<title>{data.product ? data.product.name : 'Not Found'} | TearRubr Verification</title>
 	<meta
 		name="description"
 		content="Cryptographic product verification proof backed by Ethereum smart contracts and The Graph."
@@ -100,24 +80,24 @@
 		{#if data.product}
 			<div in:fly={{ y: 16, duration: 400 }} class="space-y-6">
 				<!-- MAIN AUTHENTIC IDENTITY CARD -->
-				<div class="rounded-3xl bg-[#0c0c16]/80 border border-emerald-500/30 backdrop-blur-2xl shadow-[0_20px_50px_rgba(16,185,129,0.08)] overflow-hidden">
+				<div class="rounded-3xl bg-[#0c0c16]/80 border {data.product.blockchainTxHash ? 'border-emerald-500/30 shadow-[0_20px_50px_rgba(16,185,129,0.08)]' : 'border-white/10 shadow-xl'} backdrop-blur-2xl overflow-hidden">
 					<!-- Status Header -->
-					<div class="px-6 py-5 bg-emerald-500/10 border-b border-emerald-500/20 flex items-center justify-between">
+					<div class="px-6 py-5 {data.product.blockchainTxHash ? 'bg-emerald-500/10 border-b border-emerald-500/20' : 'bg-white/[0.03] border-b border-white/[0.08]'} flex items-center justify-between">
 						<div class="flex items-center gap-3.5">
-							<div class="w-10 h-10 rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 font-bold text-lg">
-								✓
+							<div class="w-10 h-10 rounded-full {data.product.blockchainTxHash ? 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-400' : 'bg-white/10 border border-white/20 text-[#8e8ea0]'} flex items-center justify-center font-bold text-lg">
+								{data.product.blockchainTxHash ? '✓' : 'ID'}
 							</div>
 							<div>
 								<div class="flex items-center gap-2">
-									<h2 class="text-sm font-bold text-emerald-400 font-display tracking-wider uppercase">
-										Authentic Product
+									<h2 class="text-sm font-bold {data.product.blockchainTxHash ? 'text-emerald-400' : 'text-white'} font-display tracking-wider uppercase">
+										{data.product.blockchainTxHash ? 'Authentic Product Record' : 'Registered Item'}
 									</h2>
-									<span class="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-mono-tight border border-emerald-500/30">
-										On-Chain Proof
+									<span class="px-2 py-0.5 rounded-full {data.product.blockchainTxHash ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-white/10 text-[#8e8ea0]'} text-[10px] font-mono-tight">
+										{data.product.blockchainTxHash ? 'On-Chain Proof' : 'Local Record'}
 									</span>
 								</div>
 								<p class="text-xs text-[#8e8ea0] mt-0.5">
-									Cryptographically verified on Ethereum Sepolia
+									{data.product.blockchainTxHash ? 'Cryptographically anchored to Ethereum Sepolia' : 'Registered in decentralized ledger database'}
 								</p>
 							</div>
 						</div>
@@ -132,30 +112,29 @@
 						<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
 							<div>
 								<span class="text-[11px] font-mono-tight text-[#7a7a8e] uppercase tracking-wider block">
-									Issuing Manufacturer
+									Registered Issuer
 								</span>
 								<h3 class="text-lg font-bold text-white font-display mt-0.5">
 									{data.product.manufacturer}
 								</h3>
 							</div>
 
-							<!-- Brand Attestation / Anti-Spoofing Status -->
-							{#if verifiedProfile}
+							<!-- On-Chain Status -->
+							{#if data.product.blockchainTxHash}
 								<div class="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center gap-2.5 text-xs">
 									<span class="w-2 h-2 rounded-full bg-emerald-400"></span>
 									<div>
 										<div class="font-bold text-emerald-300 font-mono-tight">
-											{verifiedProfile.ensName} (Verified)
+											Sepolia On-Chain Verified
 										</div>
 										<div class="text-[10px] text-[#8e8ea0]">
-											{verifiedProfile.tier} Attestation on Ethereum
+											Smart contract validated record
 										</div>
 									</div>
 								</div>
 							{:else}
-								<div class="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center gap-2 text-xs text-amber-300">
-									<span>⚠️</span>
-									<span>Unverified Issuer (Unclaimed Brand)</span>
+								<div class="p-2.5 rounded-xl bg-white/[0.03] border border-white/10 flex items-center gap-2 text-xs text-[#8e8ea0]">
+									<span>Community Ledger Entry</span>
 								</div>
 							{/if}
 						</div>
@@ -264,14 +243,14 @@
 				</div>
 			</div>
 		{:else}
-			<!-- UNVERIFIED / COUNTERFEIT WARNING CARD -->
+			<!-- UNVERIFIED / NOT FOUND CARD -->
 			<div class="p-8 rounded-3xl bg-danger/10 border border-danger/30 text-center space-y-4 backdrop-blur-xl">
 				<div class="w-12 h-12 rounded-full bg-danger/20 text-danger text-2xl font-bold flex items-center justify-center mx-auto">
 					✕
 				</div>
-				<h2 class="text-xl font-bold text-white font-display">Product Identity Not Verified</h2>
+				<h2 class="text-xl font-bold text-white font-display">Product Identity Not Found</h2>
 				<p class="text-xs text-[#9494a8] max-w-md mx-auto leading-relaxed">
-					TearRubr cannot locate an authentic cryptographic record on Ethereum Sepolia for this identifier. This item may be an unauthorized copy or counterfeit.
+					TearRubr cannot locate an authentic cryptographic record on Ethereum Sepolia for this identifier. This item may be an uncommitted draft or counterfeit.
 				</p>
 				<a
 					href="/verify"

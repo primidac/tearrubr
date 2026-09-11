@@ -27,6 +27,8 @@ export async function load({ params }) {
         product: product || null,
         batch: batch || null,
         id,
+        contractAddress: CONTRACT_ADDRESS,
+        explorerBaseUrl: EXPLORER_BASE_URL,
         onChain: {
             isRegistered: onChainRecord.isRegistered,
             isAuthentic: onChainRecord.isAuthentic,

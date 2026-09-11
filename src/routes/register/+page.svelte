@@ -1,8 +1,8 @@
 <script lang="ts">
-	import { fly, fade } from 'svelte/transition';
+	import { fade } from 'svelte/transition';
 	import { goto } from '$app/navigation';
 	import Navbar from '$lib/components/Navbar.svelte';
-	import { auth, VERIFIED_MANUFACTURERS } from '$lib/auth.svelte';
+	import { auth } from '$lib/auth.svelte';
 
 	let activeTab = $state<'batch' | 'single'>('batch');
 
@@ -12,17 +12,18 @@
 	let description = $state('');
 
 	// Batch state
-	let batchManufacturer = $state(auth.session.brandName || 'The Coca-Cola Company');
-	let batchProductName = $state('Coca-Cola Original Taste 500ml');
-	let batchNumber = $state('LOT-2026-ATL-09');
-	let batchDescription = $state('Atlanta Bottling Plant #4, Line 2');
-	let batchQuantity = $state(25);
+	let batchManufacturer = $state('');
+	let batchProductName = $state('');
+	let batchNumber = $state('');
+	let batchDescription = $state('');
+	let batchQuantity = $state(20);
 
 	// Update default manufacturer when auth session changes
 	$effect(() => {
-		if (auth.session.brandName) {
-			batchManufacturer = auth.session.brandName;
-			if (!manufacturer) manufacturer = auth.session.brandName;
+		if (auth.session.isConnected) {
+			const identifier = auth.session.ensName || auth.session.walletAddress || '';
+			if (!batchManufacturer) batchManufacturer = identifier;
+			if (!manufacturer) manufacturer = identifier;
 		}
 	});
 
@@ -43,11 +44,9 @@
 		downloadUrl: string;
 	} | null>(null);
 
-	// Anti-spoofing check
+	// Real on-chain manufacturer authority check
 	let currentBrandCheck = $derived(
-		activeTab === 'batch'
-			? auth.checkBrandAuthority(batchManufacturer)
-			: auth.checkBrandAuthority(manufacturer)
+		auth.checkBrandAuthority(activeTab === 'batch' ? batchManufacturer : manufacturer)
 	);
 
 	async function handleBatchSubmit(e: Event) {
@@ -156,26 +155,20 @@
 		<!-- Identity & Anti-Spoofing Banner -->
 		<div class="mb-8 p-4 rounded-2xl bg-white/[0.03] border border-white/[0.08] backdrop-blur-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
 			<div class="flex items-center gap-3">
-				<div class="w-9 h-9 rounded-xl {auth.session.isVerifiedManufacturer ? 'bg-emerald-500/20 text-emerald-400' : 'bg-indigo-500/20 text-indigo-400'} flex items-center justify-center font-bold text-sm">
-					{auth.session.isVerifiedManufacturer ? '✓' : 'ID'}
+				<div class="w-9 h-9 rounded-xl {currentBrandCheck.isAuthorized ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' : 'bg-white/10 text-[#8e8ea0] border border-white/10'} flex items-center justify-center font-bold text-sm">
+					{currentBrandCheck.isAuthorized ? '✓' : 'ID'}
 				</div>
 				<div>
 					<div class="flex items-center gap-2">
 						<span class="text-xs font-bold text-white font-mono-tight">
-							{auth.session.ensName || auth.session.walletAddress || 'Unconnected Session'}
+							{auth.session.ensName || auth.session.walletAddress || 'Wallet Disconnected'}
 						</span>
-						{#if auth.session.isVerifiedManufacturer}
-							<span class="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] font-mono-tight">
-								✓ {auth.session.tier} Verified
-							</span>
-						{:else}
-							<span class="px-2 py-0.5 rounded-full bg-white/10 text-[#8e8ea0] text-[10px] font-mono-tight">
-								Community Issuer
-							</span>
-						{/if}
+						<span class="px-2 py-0.5 rounded-full {currentBrandCheck.isAuthorized ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-white/10 text-[#8e8ea0]'} text-[10px] font-mono-tight">
+							{currentBrandCheck.badge}
+						</span>
 					</div>
 					<div class="text-[11px] text-[#7a7a8e] mt-0.5">
-						Issuing on behalf of: <strong class="text-white">{auth.session.brandName || 'Custom Brand'}</strong>
+						{currentBrandCheck.message}
 					</div>
 				</div>
 			</div>
@@ -184,28 +177,9 @@
 				onclick={() => auth.openModal()}
 				class="px-3.5 py-1.5 rounded-full bg-white/10 hover:bg-white/15 text-xs text-white transition-colors font-display self-start sm:self-auto"
 			>
-				Switch Brand (ENS) →
+				{auth.session.isConnected ? 'Manage Wallet ↗' : 'Connect Wallet'}
 			</button>
 		</div>
-
-		<!-- Anti-Spoofing Warning if Claiming Unauthorized Brand -->
-		{#if !currentBrandCheck.isAuthorized}
-			<div class="mb-8 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs flex items-start gap-3" transition:fade>
-				<span class="text-base shrink-0">⚠️</span>
-				<div>
-					<h4 class="font-bold font-display text-amber-300">Brand Attestation Warning</h4>
-					<p class="mt-0.5 leading-relaxed text-[#c0c0d4]">
-						{currentBrandCheck.reason} To issue verified products for this brand, please connect using the corresponding ENS key.
-					</p>
-					<button
-						onclick={() => auth.openModal()}
-						class="mt-2 text-xs font-semibold text-amber-300 hover:underline"
-					>
-						Switch to verified ENS identity in Privy modal →
-					</button>
-				</div>
-			</div>
-		{/if}
 
 		<!-- Tab Switcher -->
 		<div class="flex justify-center mb-8">
@@ -253,7 +227,7 @@
 								bind:value={batchManufacturer}
 								required
 								class="w-full px-4 py-3 rounded-2xl bg-[#08080e] border border-white/10 text-xs sm:text-sm text-white focus:outline-none focus:border-accent transition-all"
-								placeholder="e.g. The Coca-Cola Company"
+								placeholder="e.g. Apex Global Horology"
 							/>
 						</div>
 
@@ -267,7 +241,7 @@
 								bind:value={batchProductName}
 								required
 								class="w-full px-4 py-3 rounded-2xl bg-[#08080e] border border-white/10 text-xs sm:text-sm text-white focus:outline-none focus:border-accent transition-all"
-								placeholder="e.g. Coca-Cola Original Taste 500ml"
+								placeholder="e.g. Apex Precision Chrono Series I"
 							/>
 						</div>
 					</div>
@@ -283,7 +257,7 @@
 								bind:value={batchNumber}
 								required
 								class="w-full px-4 py-3 rounded-2xl bg-[#08080e] border border-white/10 text-xs sm:text-sm text-white font-mono-tight focus:outline-none focus:border-accent transition-all"
-								placeholder="e.g. LOT-2026-ATL-09"
+								placeholder="e.g. LOT-2026-001"
 							/>
 						</div>
 
@@ -340,7 +314,7 @@
 							bind:value={manufacturer}
 							required
 							class="w-full px-4 py-3 rounded-2xl bg-[#08080e] border border-white/10 text-xs sm:text-sm text-white focus:outline-none focus:border-accent transition-all"
-							placeholder="e.g. Aura Horology"
+							placeholder="e.g. Apex Precision"
 						/>
 					</div>
 
@@ -354,7 +328,7 @@
 							bind:value={name}
 							required
 							class="w-full px-4 py-3 rounded-2xl bg-[#08080e] border border-white/10 text-xs sm:text-sm text-white focus:outline-none focus:border-accent transition-all"
-							placeholder="e.g. Aura Chronograph X"
+							placeholder="e.g. Titanium Watch Edition"
 						/>
 					</div>
 

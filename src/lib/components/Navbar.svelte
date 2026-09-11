@@ -2,7 +2,6 @@
 	import Logo from './Logo.svelte';
 	import PrivyAuthModal from './PrivyAuthModal.svelte';
 	import { auth } from '$lib/auth.svelte';
-	import { page } from '$app/state';
 
 	interface Props {
 		currentPath?: string;
@@ -14,6 +13,12 @@
 
 	function openAuth() {
 		auth.openModal();
+	}
+
+	function formatAddress(addr: string | null) {
+		if (!addr) return '';
+		if (addr.length <= 12) return addr;
+		return `${addr.slice(0, 6)}…${addr.slice(-4)}`;
 	}
 </script>
 
@@ -47,27 +52,28 @@
 
 		<!-- Right Action & Identity Dock -->
 		<div class="flex items-center gap-2 sm:gap-2.5">
-			<!-- Connected Identity Pill (ENS / Privy) -->
+			<!-- Real Wallet Connection Pill -->
 			{#if auth.session.isConnected}
 				<button
 					onclick={openAuth}
-					class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/[0.05] hover:bg-white/[0.1] border border-white/10 text-xs font-mono-tight text-white transition-all"
-					title="Authenticated with {auth.session.ensName || auth.session.walletAddress}"
+					class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-xs font-mono-tight text-white transition-all"
+					title="Connected: {auth.session.walletAddress}"
 				>
 					<span class="w-1.5 h-1.5 rounded-full {auth.session.isVerifiedManufacturer ? 'bg-emerald-400' : 'bg-indigo-400'}"></span>
-					<span class="font-medium truncate max-w-[100px] sm:max-w-[130px]">
-						{auth.session.ensName || auth.session.walletAddress}
+					<span class="font-medium">
+						{auth.session.ensName || formatAddress(auth.session.walletAddress)}
 					</span>
 					{#if auth.session.isVerifiedManufacturer}
-						<span class="text-emerald-400 text-[10px]" title="Verified Brand">✓</span>
+						<span class="text-emerald-400 text-[10px]" title="On-Chain Verified Manufacturer">✓</span>
 					{/if}
 				</button>
 			{:else}
 				<button
 					onclick={openAuth}
-					class="px-3.5 py-1.5 rounded-full bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-xs font-medium text-white transition-all font-display"
+					class="px-3.5 py-1.5 rounded-full bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-xs font-medium text-white transition-all font-display flex items-center gap-1.5"
 				>
-					Connect
+					<span class="w-1.5 h-1.5 rounded-full bg-[#8e8ea0]"></span>
+					<span>Connect Wallet</span>
 				</button>
 			{/if}
 
@@ -130,13 +136,13 @@
 					isMobileMenuOpen = false;
 					openAuth();
 				}}
-				class="w-full text-left py-2 text-accent"
+				class="w-full text-left py-2 text-accent font-semibold"
 			>
-				{auth.session.isConnected ? `Switch Identity (${auth.session.ensName})` : 'Connect with Privy / ENS'}
+				{auth.session.isConnected ? `Connected: ${auth.session.ensName || formatAddress(auth.session.walletAddress)}` : 'Connect Web3 Wallet'}
 			</button>
 		</div>
 	{/if}
 </header>
 
-<!-- Global Privy Auth Modal -->
+<!-- Global Real Web3 Auth Modal -->
 <PrivyAuthModal />

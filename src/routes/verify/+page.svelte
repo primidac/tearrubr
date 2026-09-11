@@ -1,13 +1,12 @@
 <script lang="ts">
-	import { fly, fade } from 'svelte/transition';
-	import { goto } from '$app/navigation';
+	import { fade } from 'svelte/transition';
 	import Navbar from '$lib/components/Navbar.svelte';
-	import { auth, VERIFIED_MANUFACTURERS } from '$lib/auth.svelte';
+	import { auth } from '$lib/auth.svelte';
 
 	let { data } = $props();
 
 	let searchQuery = $state('');
-	let filterType = $state<'all' | 'verified' | 'batches' | 'single'>('all');
+	let filterType = $state<'all' | 'onchain' | 'batches' | 'single'>('all');
 	let copiedId = $state<string | null>(null);
 
 	$effect(() => {
@@ -16,34 +15,14 @@
 		}
 	});
 
-	// Helper to check if a manufacturer is in our verified ENS registry
-	function getVerifiedInfo(manufacturerName: string) {
-		const norm = manufacturerName.toLowerCase();
-		if (norm.includes('coca') || norm.includes('coke')) {
-			return VERIFIED_MANUFACTURERS['cocacola.eth'];
-		}
-		if (norm.includes('louis') || norm.includes('vuitton') || norm.includes('lvmh')) {
-			return VERIFIED_MANUFACTURERS['lvmh.eth'];
-		}
-		if (norm.includes('apple')) {
-			return VERIFIED_MANUFACTURERS['apple.eth'];
-		}
-		if (norm.includes('aura')) {
-			return VERIFIED_MANUFACTURERS['aura.eth'];
-		}
-		return null;
-	}
-
 	let batchCount = $derived(data.products.filter((p) => Boolean(p.batchNumber)).length);
 	let singleCount = $derived(data.products.filter((p) => !p.batchNumber).length);
-	let verifiedCount = $derived(data.products.filter((p) => Boolean(getVerifiedInfo(p.manufacturer))).length);
+	let onChainCount = $derived(data.products.filter((p) => Boolean(p.blockchainTxHash)).length);
 
 	let filteredProducts = $derived(
 		data.products.filter((p) => {
-			const verifiedInfo = getVerifiedInfo(p.manufacturer);
-
 			// Filter type
-			if (filterType === 'verified' && !verifiedInfo) return false;
+			if (filterType === 'onchain' && !p.blockchainTxHash) return false;
 			if (filterType === 'batches' && !p.batchNumber) return false;
 			if (filterType === 'single' && p.batchNumber) return false;
 
@@ -54,7 +33,6 @@
 				p.name.toLowerCase().includes(q) ||
 				p.manufacturer.toLowerCase().includes(q) ||
 				p.id.toLowerCase().includes(q) ||
-				(verifiedInfo && verifiedInfo.ensName.toLowerCase().includes(q)) ||
 				(p.batchNumber && p.batchNumber.toLowerCase().includes(q)) ||
 				(p.blockchainTxHash && p.blockchainTxHash.toLowerCase().includes(q)) ||
 				(p.description && p.description.toLowerCase().includes(q))
@@ -92,7 +70,7 @@
 	<title>Public Ledger | TearRubr</title>
 	<meta
 		name="description"
-		content="Explore cryptographically verified product and batch records indexed by The Graph on Ethereum Sepolia."
+		content="Explore cryptographically verified product and batch records indexed on Ethereum Sepolia."
 	/>
 </svelte:head>
 
@@ -122,7 +100,7 @@
 					Public Ledger
 				</h1>
 				<p class="text-xs sm:text-sm text-[#9494a8] mt-2 max-w-xl leading-relaxed">
-					Browse all product identities, batch Merkle rollups, and physical tamper-evident seal records registered on-chain.
+					Browse all authentic product identities, batch Merkle rollups, and physical tamper-evident seal records registered on-chain.
 				</p>
 			</div>
 
@@ -158,7 +136,7 @@
 				<input
 					type="text"
 					bind:value={searchQuery}
-					placeholder="Search by Product Name, Brand, ENS (e.g. cocacola.eth), Batch LOT, or ID..."
+					placeholder="Search by Product Name, Manufacturer, Batch LOT, or ID..."
 					class="w-full pl-11 pr-24 py-3.5 rounded-2xl bg-white/[0.03] border border-white/[0.08] hover:border-white/[0.15] text-white placeholder-[#606074] text-xs sm:text-sm backdrop-blur-xl focus:outline-none focus:border-accent transition-all shadow-lg"
 				/>
 				{#if searchQuery}
@@ -180,11 +158,11 @@
 					All Records ({data.products.length})
 				</button>
 				<button
-					onclick={() => (filterType = 'verified')}
-					class="px-4 py-1.5 rounded-full font-medium transition-all flex items-center gap-1.5 {filterType === 'verified' ? 'bg-emerald-400 text-[#08080e] shadow-sm' : 'bg-white/[0.04] text-[#8e8ea0] hover:text-white border border-white/[0.06]'}"
+					onclick={() => (filterType = 'onchain')}
+					class="px-4 py-1.5 rounded-full font-medium transition-all flex items-center gap-1.5 {filterType === 'onchain' ? 'bg-emerald-400 text-[#08080e] shadow-sm' : 'bg-white/[0.04] text-[#8e8ea0] hover:text-white border border-white/[0.06]'}"
 				>
-					<span>✓ Verified Brands (ENS)</span>
-					<span class="text-[10px] opacity-80 font-mono-tight">({verifiedCount})</span>
+					<span>✓ Sepolia On-Chain</span>
+					<span class="text-[10px] opacity-80 font-mono-tight">({onChainCount})</span>
 				</button>
 				<button
 					onclick={() => (filterType = 'batches')}
@@ -208,7 +186,7 @@
 					<div class="text-2xl mb-3">🔍</div>
 					<h3 class="text-sm font-bold text-white font-display">No matching on-chain records found</h3>
 					<p class="text-xs text-[#8e8ea0] mt-1 max-w-sm mx-auto">
-						No products or batches match your query. Try searching by ENS (e.g. `cocacola.eth`) or product name.
+						No products or batches match your query. Try searching by lot number or product name.
 					</p>
 					<button
 						onclick={() => {
@@ -223,13 +201,12 @@
 			{:else}
 				<div class="grid grid-cols-1 gap-3.5">
 					{#each filteredProducts as product (product.id)}
-						{@const verifiedInfo = getVerifiedInfo(product.manufacturer)}
 						<div
 							class="p-4 sm:p-5 rounded-2xl bg-white/[0.02] hover:bg-white/[0.04] border border-white/[0.08] hover:border-white/[0.15] backdrop-blur-xl transition-all duration-200 shadow-lg group"
 							in:fade={{ duration: 120 }}
 						>
 							<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-								<!-- Left: Product Identity & Verified Brand Pill -->
+								<!-- Left: Product Identity & Verified Status -->
 								<div class="space-y-1.5">
 									<div class="flex flex-wrap items-center gap-2">
 										<a
@@ -239,16 +216,15 @@
 											{product.name}
 										</a>
 
-										<!-- Brand Verification Badge (Anti-Spoofing) -->
-										{#if verifiedInfo}
+										<!-- Real On-Chain Sepolia Status Badge -->
+										{#if product.blockchainTxHash}
 											<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[11px] font-mono-tight">
 												<span>✓</span>
-												<span class="font-semibold">{verifiedInfo.ensName}</span>
-												<span class="text-[10px] text-emerald-500">[{verifiedInfo.tier}]</span>
+												<span class="font-semibold">Sepolia On-Chain</span>
 											</span>
 										{:else}
 											<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/[0.05] text-[#8e8ea0] border border-white/10 text-[10px] font-mono-tight">
-												Unverified Issuer
+												Local Ledger
 											</span>
 										{/if}
 

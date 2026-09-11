@@ -1,7 +1,6 @@
 <script lang="ts">
-	import { fly } from 'svelte/transition';
 	import Navbar from '$lib/components/Navbar.svelte';
-	import { auth, VERIFIED_MANUFACTURERS } from '$lib/auth.svelte';
+	import { auth } from '$lib/auth.svelte';
 
 	let { data } = $props();
 
@@ -10,8 +9,9 @@
 		return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 	}
 
-	function truncateId(id: string) {
-		return id.length > 16 ? `${id.slice(0, 8)}…${id.slice(-6)}` : id;
+	function truncateId(id: string, lead = 8, trail = 6) {
+		if (!id) return '';
+		return id.length > lead + trail ? `${id.slice(0, lead)}…${id.slice(-trail)}` : id;
 	}
 
 	let totalUnits = $derived(data.products.length);
@@ -75,44 +75,74 @@
 			</div>
 		</div>
 
-		<!-- Connected Manufacturer Profile Card (Privy + ENS Identity) -->
+		<!-- Connected Manufacturer Profile Card (Real Web3 & Sepolia On-Chain Identity) -->
 		<div class="mt-8 p-5 sm:p-6 rounded-3xl bg-[#0c0c16]/80 border border-white/[0.08] backdrop-blur-2xl shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-6">
-			<div class="flex items-center gap-4">
-				<div class="w-12 h-12 rounded-2xl {auth.session.isVerifiedManufacturer ? 'bg-emerald-500/20 text-emerald-400' : 'bg-indigo-500/20 text-indigo-400'} border border-white/10 flex items-center justify-center font-bold text-base font-display shrink-0">
-					{auth.session.isVerifiedManufacturer ? '✓' : 'ID'}
-				</div>
-				<div>
-					<div class="flex items-center gap-2.5">
-						<h2 class="text-base font-bold text-white font-display">
-							{auth.session.brandName || 'Authentic Producer'}
-						</h2>
-						{#if auth.session.isVerifiedManufacturer}
-							<span class="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-[11px] font-mono-tight border border-emerald-500/30">
-								✓ {auth.session.tier} Verified
-							</span>
-						{:else}
-							<span class="px-2 py-0.5 rounded-full bg-white/10 text-[#8e8ea0] text-[11px] font-mono-tight">
-								Community Issuer
-							</span>
-						{/if}
+			{#if auth.session.isConnected}
+				<div class="flex items-center gap-4">
+					<div class="w-12 h-12 rounded-2xl {auth.session.isOwner || auth.session.isVerifiedManufacturer ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40' : 'bg-indigo-500/20 text-indigo-400 border-indigo-500/30'} border flex items-center justify-center font-bold text-base font-display shrink-0">
+						{auth.session.isOwner || auth.session.isVerifiedManufacturer ? '✓' : 'ID'}
 					</div>
-					<div class="flex flex-wrap items-center gap-3 text-xs text-[#8e8ea0] mt-1 font-mono-tight">
-						<span>ENS: <strong class="text-white">{auth.session.ensName || 'unregistered.eth'}</strong></span>
-						<span class="text-white/20">·</span>
-						<span>Wallet: {auth.session.walletAddress || '0x...'}</span>
+					<div>
+						<div class="flex flex-wrap items-center gap-2.5">
+							<h2 class="text-base font-bold text-white font-display">
+								{auth.session.ensName || truncateId(auth.session.walletAddress || '', 8, 6)}
+							</h2>
+							{#if auth.session.isOwner}
+								<span class="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-[11px] font-mono-tight border border-emerald-500/30">
+									✓ Contract Owner (Sepolia)
+								</span>
+							{:else if auth.session.isVerifiedManufacturer}
+								<span class="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-[11px] font-mono-tight border border-emerald-500/30">
+									✓ Whitelisted Manufacturer
+								</span>
+							{:else}
+								<span class="px-2 py-0.5 rounded-full bg-white/10 text-[#8e8ea0] text-[11px] font-mono-tight">
+									Community Wallet
+								</span>
+							{/if}
+						</div>
+						<div class="flex flex-wrap items-center gap-3 text-xs text-[#8e8ea0] mt-1 font-mono-tight">
+							<span>ENS: <strong class="text-white">{auth.session.ensName || 'No reverse ENS'}</strong></span>
+							<span class="text-white/20">·</span>
+							<span>Address: {truncateId(auth.session.walletAddress || '', 10, 8)}</span>
+							<span class="text-white/20">·</span>
+							<span class="text-emerald-400">Sepolia Active</span>
+						</div>
 					</div>
 				</div>
-			</div>
 
-			<!-- Switch Identity CTA -->
-			<div class="flex items-center gap-3 self-start md:self-auto">
-				<button
-					onclick={() => auth.openModal()}
-					class="px-4 py-2 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-display text-white transition-all"
-				>
-					Switch Brand (ENS) ↗
-				</button>
-			</div>
+				<div class="flex items-center gap-3 self-start md:self-auto">
+					<button
+						onclick={() => auth.openModal()}
+						class="px-4 py-2 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-display text-white transition-all"
+					>
+						Switch Wallet ↗
+					</button>
+				</div>
+			{:else}
+				<div class="flex items-center gap-4">
+					<div class="w-12 h-12 rounded-2xl bg-white/[0.04] border border-white/10 flex items-center justify-center font-bold text-base font-display text-[#8e8ea0] shrink-0">
+						⚿
+					</div>
+					<div>
+						<h2 class="text-base font-bold text-white font-display">
+							Wallet Disconnected
+						</h2>
+						<p class="text-xs text-[#8e8ea0] mt-0.5">
+							Connect your Web3 wallet (MetaMask, Rabby, Rainbow) to verify on-chain manufacturer credentials and mint batches.
+						</p>
+					</div>
+				</div>
+
+				<div class="flex items-center gap-3 self-start md:self-auto">
+					<button
+						onclick={() => auth.openModal()}
+						class="px-5 py-2 rounded-full bg-white text-[#08080e] hover:bg-white/90 font-bold text-xs font-display transition-all shadow-md"
+					>
+						Connect Wallet
+					</button>
+				</div>
+			{/if}
 		</div>
 
 		<!-- 3 Clean Metric Cards (Neat, uncluttered) -->
@@ -179,7 +209,7 @@
 					<table class="w-full text-xs text-left">
 						<thead class="border-b border-white/[0.06] text-[#7a7a8e] uppercase font-mono-tight text-[10px]">
 							<tr>
-								<th class="px-6 py-3.5">Product & Brand</th>
+								<th class="px-6 py-3.5">Product & Manufacturer</th>
 								<th class="px-6 py-3.5">Batch / Type</th>
 								<th class="px-6 py-3.5">Unique ID</th>
 								<th class="px-6 py-3.5">Tamper Seal</th>
@@ -204,7 +234,7 @@
 										{/if}
 									</td>
 									<td class="px-6 py-4 font-mono-tight text-[#8e8ea0]">
-										{truncateId(product.id)}
+										{truncateId(product.id, 8, 6)}
 									</td>
 									<td class="px-6 py-4">
 										<span class="px-2 py-0.5 rounded-full text-[10px] font-mono-tight {product.sealStatus === 'opened' ? 'bg-amber-500/15 text-amber-300' : 'bg-emerald-500/15 text-emerald-300'}">
@@ -219,7 +249,7 @@
 												rel="noopener noreferrer"
 												class="text-accent hover:underline flex items-center gap-1"
 											>
-												<span>{truncateId(product.blockchainTxHash)}</span>
+												<span>{truncateId(product.blockchainTxHash, 6, 4)}</span>
 												<span>↗</span>
 											</a>
 										{:else}
