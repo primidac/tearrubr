@@ -49,17 +49,6 @@
 
 		<!-- Main Hero Content -->
 		<div class="w-full max-w-4xl mx-auto relative z-10 text-center px-4" in:fly={{ y: 24, duration: 700 }}>
-			<!-- Live Protocol Badge -->
-			<div class="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-white/[0.04] border border-white/10 backdrop-blur-md mb-8 hover:bg-white/[0.07] transition-all">
-				<span class="relative flex h-2 w-2">
-					<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-					<span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-				</span>
-				<span class="text-xs font-medium text-[#c0c0d4] tracking-wide font-display">
-					Ethereum Sepolia Live · Cryptographic Tamper-Proof Protocol
-				</span>
-			</div>
-
 			<!-- Editorial Headline -->
 			<h1 class="text-5xl sm:text-6xl md:text-7xl lg:text-[76px] font-extrabold tracking-[-0.035em] text-white leading-[1.06] mb-7 font-display">
 				Built for Real Products,<br class="hidden sm:inline" /> Open for Everyone
