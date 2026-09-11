@@ -10,44 +10,106 @@
 
 <div class="min-h-screen bg-[#08080e]">
 
-    <!-- Navigation -->
-    <nav class="fixed top-0 left-0 right-0 z-50 border-b border-border bg-[#08080e]/80 backdrop-blur-md">
-        <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+    <!-- Floating Dock Navigation (Sahara AI style) -->
+    <header class="fixed top-5 left-0 right-0 z-50 flex justify-center px-4">
+        <nav class="max-w-5xl w-full mx-auto px-5 py-2.5 rounded-full bg-[#0a0a14]/75 backdrop-blur-xl border border-white/[0.08] shadow-[0_8px_32px_rgba(0,0,0,0.4)] flex items-center justify-between transition-all duration-200">
             <a href="/" class="flex items-center gap-2.5">
-                <Logo size={28} />
-                <span class="text-lg font-bold tracking-tight text-text-primary">TearRubr</span>
+                <Logo size={24} />
+                <span class="text-[15px] font-bold tracking-tight text-white font-display">TearRubr</span>
             </a>
-            <div class="hidden md:flex items-center gap-8">
-                <a href="#how-it-works" class="text-sm text-text-secondary hover:text-text-primary transition-colors">How it works</a>
-                <a href="#why-blockchain" class="text-sm text-text-secondary hover:text-text-primary transition-colors">Why blockchain</a>
-                <a href="/verify" class="text-sm text-text-secondary hover:text-text-primary transition-colors">Public Ledger</a>
-                <a href="/dashboard" class="text-sm font-medium text-text-primary px-4 py-2 rounded-lg border border-border hover:border-text-tertiary hover:bg-surface-raised transition-all">Dashboard</a>
+            
+            <div class="hidden md:flex items-center gap-7 text-xs font-medium text-text-secondary">
+                <a href="/verify" class="hover:text-white transition-colors">Public Ledger</a>
+                <a href="#how-it-works" class="hover:text-white transition-colors">How it works</a>
+                <a href="#why-blockchain" class="hover:text-white transition-colors">Why blockchain</a>
+                <a href="/register" class="hover:text-white transition-colors">Register</a>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <a href="/dashboard" class="rounded-full px-5 py-2 text-xs font-semibold bg-white text-[#08080e] hover:bg-white/90 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-sm font-display">
+                    Dashboard
+                </a>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Hero Section (Sahara AI luminous atmosphere with TearRubr palette) -->
+    <section class="pt-36 md:pt-44 pb-28 md:pb-36 px-6 relative overflow-hidden flex flex-col items-center justify-center">
+        
+        <!-- Atmospheric Luminous Blooms (Our Palette: Electric Indigo, Cyan, Emerald & Iris) -->
+        <div class="absolute inset-0 pointer-events-none overflow-hidden select-none">
+            <!-- Top Right Bloom (Electric Indigo / Violet Aura) -->
+            <div class="absolute -top-12 -right-16 w-[550px] h-[550px] rounded-full bg-[#6366f1]/25 blur-[130px]"></div>
+            
+            <!-- Bottom Left Bloom (Cryptographic Mint / Emerald & Cyan Aura) -->
+            <div class="absolute -bottom-16 -left-20 w-[580px] h-[580px] rounded-full bg-[#10b981]/20 blur-[130px]"></div>
+            <div class="absolute bottom-10 left-10 w-[380px] h-[380px] rounded-full bg-[#06b6d4]/15 blur-[100px]"></div>
+            
+            <!-- Center Soft Wash (Deep Iris) -->
+            <div class="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[450px] rounded-full bg-[#4f46e5]/15 blur-[140px]"></div>
+
+            <!-- Geometric Rosette / Ray Watermark in Bottom Left (Sahara AI signature detail) -->
+            <div class="absolute bottom-8 left-6 md:left-14 opacity-15">
+                <svg width="140" height="140" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" class="text-emerald-400">
+                    <line x1="50" y1="0" x2="50" y2="100" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" />
+                    <line x1="0" y1="50" x2="100" y2="50" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" />
+                    <line x1="14.6" y1="14.6" x2="85.4" y2="85.4" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" />
+                    <line x1="85.4" y1="14.6" x2="14.6" y2="85.4" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" />
+                    <line x1="30" y1="5" x2="70" y2="95" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-dasharray="3 4" />
+                    <line x1="5" y1="30" x2="95" y2="70" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-dasharray="3 4" />
+                    <circle cx="50" cy="50" r="18" stroke="currentColor" stroke-width="1.5" />
+                    <circle cx="50" cy="50" r="6" fill="currentColor" />
+                </svg>
             </div>
         </div>
-    </nav>
 
-    <!-- Hero -->
-    <section class="pt-40 pb-24 px-6 relative overflow-hidden">
-        <div class="absolute inset-0 bg-dots opacity-40"></div>
-        <!-- Subtle top glow -->
-        <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-accent/5 rounded-full blur-[120px] pointer-events-none"></div>
+        <!-- Subtle Dot Grid Overlay for Architectural Precision -->
+        <div class="absolute inset-0 bg-dots opacity-20 pointer-events-none"></div>
 
-        <div class="max-w-3xl mx-auto relative z-10 text-center" in:fly={{ y: 20, duration: 600 }}>
-            <p class="text-accent text-sm font-semibold tracking-wide uppercase mb-5">Product Authentication</p>
-            <h1 class="text-5xl lg:text-6xl font-extrabold tracking-tight text-text-primary leading-[1.1] mb-6">
-                Verify what's real<br />in a world full of<br />counterfeits.
+        <!-- Main Hero Content -->
+        <div class="max-w-4xl mx-auto relative z-10 text-center px-4" in:fly={{ y: 24, duration: 700 }}>
+            
+            <!-- Live Protocol Badge -->
+            <div class="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-white/[0.04] border border-white/10 backdrop-blur-md mb-8 hover:bg-white/[0.07] transition-all">
+                <span class="relative flex h-2 w-2">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+                <span class="text-xs font-medium text-[#c0c0d4] tracking-wide font-display">Ethereum Sepolia Live · Cryptographic Tamper-Proof Protocol</span>
+            </div>
+
+            <!-- Sahara AI Style Editorial Headline -->
+            <h1 class="text-5xl sm:text-6xl md:text-7xl lg:text-[76px] font-extrabold tracking-[-0.035em] text-white leading-[1.06] mb-7 font-display">
+                Built for Real Products,<br class="hidden sm:inline" /> Open for Everyone
             </h1>
-            <p class="text-lg text-text-secondary leading-relaxed mb-10 max-w-2xl mx-auto">
-                TearRubr gives physical products a verifiable digital identity backed by blockchain — so consumers can independently verify authenticity without trusting the seller.
+
+            <!-- Subtitle -->
+            <p class="text-base sm:text-lg md:text-xl text-[#9da3b4] leading-relaxed max-w-2xl mx-auto mb-11 font-normal font-sans">
+                TearRubr delivers trusted cryptographic product identities, tamper-evident physical seals, and immutable on-chain verification for brands and consumers worldwide.
             </p>
-            <div class="flex items-center justify-center gap-4">
-                <a href="/verify" class="px-6 py-3 rounded-lg bg-accent hover:bg-accent-muted text-white font-semibold text-sm glow-accent transition-all">
-                    Public Ledger
+
+            <!-- Dual Pill Buttons (Sahara AI style) -->
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-3.5">
+                <!-- Primary Solid Pill Button -->
+                <a 
+                    href="/verify" 
+                    class="w-full sm:w-auto px-7 py-3.5 rounded-full bg-[#08080e] hover:bg-[#12121e] border border-white/20 hover:border-white/30 text-white font-medium text-sm transition-all duration-200 shadow-xl hover:scale-[1.02] active:scale-[0.98] font-display flex items-center justify-center gap-2.5"
+                >
+                    <span>Public Ledger Explorer</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-text-tertiary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                    </svg>
                 </a>
-                <a href="/dashboard" class="px-6 py-3 rounded-lg border border-border hover:border-text-tertiary text-text-secondary hover:text-text-primary font-medium text-sm transition-all">
+
+                <!-- Secondary Frosted Glass Pill Button -->
+                <a 
+                    href="/register" 
+                    class="w-full sm:w-auto px-7 py-3.5 rounded-full bg-white/[0.07] hover:bg-white/[0.13] border border-white/10 hover:border-white/20 text-white font-medium text-sm backdrop-blur-md transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] font-display"
+                >
                     Manufacturer Portal
                 </a>
             </div>
+
         </div>
     </section>
 
