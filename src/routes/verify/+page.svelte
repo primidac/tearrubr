@@ -293,6 +293,12 @@
 												<span>✓</span>
 												<span class="font-semibold">Sepolia On-Chain</span>
 											</span>
+											{#if (product as any).indexedByGraph}
+												<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 text-[10px] font-mono-tight" title="Indexed by The Graph Studio">
+													<span>◈</span>
+													<span>The Graph</span>
+												</span>
+											{/if}
 										{:else}
 											<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/[0.05] text-[#8e8ea0] border border-white/10 text-[10px] font-mono-tight">
 												Local Ledger

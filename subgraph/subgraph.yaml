@@ -1,0 +1,26 @@
+specVersion: 0.0.5
+schema:
+  file: ./schema.graphql
+dataSources:
+  - kind: ethereum/contract
+    name: TearRubr
+    network: sepolia
+    source:
+      address: "0xa34C7D37BB2bf41f73e562075878E86eFc7Ed05B"
+      abi: TearRubr
+      startBlock: 11680000
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - Product
+      abis:
+        - name: TearRubr
+          file: ./abis/TearRubr.json
+      eventHandlers:
+        - event: ProductRegistered(string,string)
+          handler: handleProductRegistered
+        - event: ProductStatusUpdated(string,bool)
+          handler: handleProductStatusUpdated
+      file: ./src/mapping.ts

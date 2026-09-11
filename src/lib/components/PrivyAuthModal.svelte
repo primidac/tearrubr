@@ -2,10 +2,37 @@
 	import { auth } from '$lib/auth.svelte';
 	import { fade, scale } from 'svelte/transition';
 
+	let activeTab = $state<'wallet' | 'email' | 'lookup'>('wallet');
+
+	// Email OTP state
+	let email = $state('');
+	let otpCode = $state('');
+	let emailStep = $state<'input' | 'verify'>('input');
+	let emailSuccessMessage = $state<string | null>(null);
+
+	// Manual lookup
 	let manualAddress = $state('');
 
 	function handleConnect() {
 		auth.connectWallet();
+	}
+
+	async function handleSendEmailCode(e: Event) {
+		e.preventDefault();
+		if (!email.trim()) return;
+		emailSuccessMessage = null;
+
+		const res = await auth.sendPrivyEmailCode(email.trim());
+		if (res.success) {
+			emailStep = 'verify';
+			emailSuccessMessage = `6-digit verification code sent to ${email.trim()}`;
+		}
+	}
+
+	async function handleVerifyEmailCode(e: Event) {
+		e.preventDefault();
+		if (!otpCode.trim()) return;
+		await auth.verifyPrivyEmailCode(email.trim(), otpCode.trim());
 	}
 
 	function handleManualLookup(e: Event) {
@@ -43,12 +70,12 @@
 			<div class="flex items-center justify-between pb-4 border-b border-white/[0.08] relative z-10">
 				<div>
 					<div class="flex items-center gap-2">
-						<h3 class="text-base font-bold text-white font-display">Connect Web3 Wallet</h3>
+						<h3 class="text-base font-bold text-white font-display">Sign In & Connect</h3>
 						<span class="text-[10px] font-mono-tight px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
-							Sepolia
+							Privy Active
 						</span>
 					</div>
-					<p class="text-xs text-[#8e8ea0] mt-0.5">Direct connection via Ethereum provider</p>
+					<p class="text-xs text-[#8e8ea0] mt-0.5">Ethereum Sepolia · Verified Infrastructure</p>
 				</div>
 
 				<button
@@ -71,17 +98,28 @@
 			{#if auth.session.isConnected}
 				<div class="mt-6 p-4 rounded-2xl bg-white/[0.03] border border-white/[0.08] space-y-2 text-xs">
 					<div class="flex items-center justify-between">
-						<span class="text-[#7a7a8e]">Connected Wallet:</span>
+						<span class="text-[#7a7a8e]">Connected Identity:</span>
 						<span class="font-mono-tight font-bold text-white">
-							{auth.session.ensName || auth.session.walletAddress}
+							{auth.session.ensName || auth.session.walletAddress || auth.session.email}
 						</span>
 					</div>
 
 					<div class="flex items-center justify-between">
-						<span class="text-[#7a7a8e]">Contract Status:</span>
-						{#if auth.session.isVerifiedManufacturer}
+						<span class="text-[#7a7a8e]">Method:</span>
+						<span class="text-white capitalize font-mono-tight">
+							{auth.session.authMethod === 'privy-email' ? 'Privy Passwordless' : auth.session.authMethod || 'Web3'}
+						</span>
+					</div>
+
+					<div class="flex items-center justify-between">
+						<span class="text-[#7a7a8e]">Contract Role:</span>
+						{#if auth.session.isOwner}
 							<span class="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 font-mono-tight text-[11px]">
-								✓ {auth.session.isOwner ? 'Contract Owner / Deployer' : 'Authorized Manufacturer'}
+								✓ Contract Owner
+							</span>
+						{:else if auth.session.isVerifiedManufacturer}
+							<span class="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 font-mono-tight text-[11px]">
+								✓ Authorized Producer
 							</span>
 						{:else}
 							<span class="px-2 py-0.5 rounded-full bg-white/10 text-[#8e8ea0] font-mono-tight text-[11px]">
@@ -94,50 +132,153 @@
 						onclick={() => auth.disconnect()}
 						class="w-full mt-3 py-2 rounded-xl bg-danger/10 hover:bg-danger/20 text-red-300 font-semibold text-xs transition-colors"
 					>
-						Disconnect Wallet
+						Disconnect
 					</button>
 				</div>
 			{:else}
-				<!-- Connect Real Browser Wallet Button -->
-				<div class="mt-6 space-y-4">
+				<!-- Tab Navigation -->
+				<div class="mt-5 p-1 rounded-xl bg-white/[0.03] border border-white/[0.06] flex items-center gap-1 text-xs font-display">
 					<button
-						onclick={handleConnect}
-						disabled={auth.isConnecting}
-						class="w-full py-3.5 rounded-2xl bg-white text-[#08080e] hover:bg-white/90 font-bold text-sm font-display transition-all shadow-xl hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-3 disabled:opacity-50"
+						onclick={() => (activeTab = 'wallet')}
+						class="flex-1 py-1.5 rounded-lg transition-all {activeTab === 'wallet' ? 'bg-white text-[#08080e] font-bold shadow' : 'text-[#8e8ea0] hover:text-white'}"
 					>
-						<svg class="w-5 h-5" viewBox="0 0 318.6 318.6" xmlns="http://www.w3.org/2000/svg">
-							<polygon points="274.1 35.5 174.6 109.4 193 65.8 274.1 35.5" fill="#e2761b" stroke="#e2761b" stroke-linecap="round" stroke-linejoin="round" />
-							<polygon points="44.4 35.5 125.6 65.8 143.9 109.4 44.4 35.5" fill="#e4761b" stroke="#e4761b" stroke-linecap="round" stroke-linejoin="round" />
-							<polygon points="238.3 206.8 211.8 247.4 268.5 263 284.8 207.7 238.3 206.8" fill="#e4761b" stroke="#e4761b" stroke-linecap="round" stroke-linejoin="round" />
-							<polygon points="33.9 207.7 50.1 263 106.8 247.4 80.3 206.8 33.9 207.7" fill="#e4761b" stroke="#e4761b" stroke-linecap="round" stroke-linejoin="round" />
-						</svg>
-						<span>{auth.isConnecting ? 'Waiting for approval...' : 'Connect Injected Wallet (MetaMask / Web3)'}</span>
+						Browser Wallet
 					</button>
+					<button
+						onclick={() => (activeTab = 'email')}
+						class="flex-1 py-1.5 rounded-lg transition-all {activeTab === 'email' ? 'bg-white text-[#08080e] font-bold shadow' : 'text-[#8e8ea0] hover:text-white'}"
+					>
+						Privy Email
+					</button>
+					<button
+						onclick={() => (activeTab = 'lookup')}
+						class="flex-1 py-1.5 rounded-lg transition-all {activeTab === 'lookup' ? 'bg-white text-[#08080e] font-bold shadow' : 'text-[#8e8ea0] hover:text-white'}"
+					>
+						Address / ENS
+					</button>
+				</div>
 
-					<div class="relative py-2">
-						<div class="absolute inset-0 flex items-center"><div class="w-full border-t border-white/[0.08]"></div></div>
-						<div class="relative flex justify-center text-[11px]"><span class="bg-[#0d0d16] px-2 text-[#7a7a8e]">or enter address</span></div>
+				<!-- TAB 1: BROWSER WALLET (METAMASK / INJECTED) -->
+				{#if activeTab === 'wallet'}
+					<div class="mt-5 space-y-3" in:fade={{ duration: 120 }}>
+						<button
+							onclick={handleConnect}
+							disabled={auth.isConnecting}
+							class="w-full py-3.5 rounded-2xl bg-white text-[#08080e] hover:bg-white/90 font-bold text-xs sm:text-sm font-display transition-all shadow-xl hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-3 disabled:opacity-50"
+						>
+							<svg class="w-5 h-5" viewBox="0 0 318.6 318.6" xmlns="http://www.w3.org/2000/svg">
+								<polygon points="274.1 35.5 174.6 109.4 193 65.8 274.1 35.5" fill="#e2761b" stroke="#e2761b" stroke-linecap="round" stroke-linejoin="round" />
+								<polygon points="44.4 35.5 125.6 65.8 143.9 109.4 44.4 35.5" fill="#e4761b" stroke="#e4761b" stroke-linecap="round" stroke-linejoin="round" />
+								<polygon points="238.3 206.8 211.8 247.4 268.5 263 284.8 207.7 238.3 206.8" fill="#e4761b" stroke="#e4761b" stroke-linecap="round" stroke-linejoin="round" />
+								<polygon points="33.9 207.7 50.1 263 106.8 247.4 80.3 206.8 33.9 207.7" fill="#e4761b" stroke="#e4761b" stroke-linecap="round" stroke-linejoin="round" />
+							</svg>
+							<span>{auth.isConnecting ? 'Waiting for wallet...' : 'Connect Injected Web3 (MetaMask / Rabby)'}</span>
+						</button>
+						<p class="text-[11px] text-[#7a7a8e] text-center leading-relaxed">
+							Connects directly to your browser extension without third-party custodians.
+						</p>
 					</div>
 
-					<!-- Manual Address Lookup Form -->
-					<form onsubmit={handleManualLookup} class="space-y-2">
-						<div class="flex gap-2">
-							<input
-								type="text"
-								bind:value={manualAddress}
-								placeholder="0x... Ethereum Address"
-								class="flex-1 px-3.5 py-2.5 rounded-xl bg-[#08080e] border border-white/10 text-xs font-mono-tight text-white placeholder-[#606074] focus:outline-none focus:border-accent"
-							/>
+				<!-- TAB 2: PRIVY EMAIL OTP -->
+				{:else if activeTab === 'email'}
+					<div class="mt-5 space-y-4" in:fade={{ duration: 120 }}>
+						{#if emailStep === 'input'}
+							<form onsubmit={handleSendEmailCode} class="space-y-3">
+								<div>
+									<label for="privy-email-input" class="block text-xs text-[#c0c0d4] mb-1.5 font-display">
+										Email Address
+									</label>
+									<input
+										id="privy-email-input"
+										type="email"
+										bind:value={email}
+										placeholder="your.email@company.com"
+										required
+										class="w-full px-4 py-3 rounded-2xl bg-[#08080e] border border-white/10 text-xs sm:text-sm text-white focus:outline-none focus:border-accent transition-all"
+									/>
+								</div>
+								<button
+									type="submit"
+									disabled={auth.isConnecting}
+									class="w-full py-3 rounded-2xl bg-indigo-500 hover:bg-indigo-400 text-white font-bold text-xs font-display transition-all shadow-md disabled:opacity-50"
+								>
+									{auth.isConnecting ? 'Sending code from Privy...' : 'Send Login Code via Privy →'}
+								</button>
+							</form>
+						{:else}
+							<form onsubmit={handleVerifyEmailCode} class="space-y-3">
+								{#if emailSuccessMessage}
+									<div class="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs">
+										{emailSuccessMessage}
+									</div>
+								{/if}
+
+								<div>
+									<label for="privy-otp-input" class="block text-xs text-[#c0c0d4] mb-1.5 font-display">
+										6-Digit Code
+									</label>
+									<input
+										id="privy-otp-input"
+										type="text"
+										bind:value={otpCode}
+										placeholder="123456"
+										maxlength="6"
+										required
+										class="w-full px-4 py-3 rounded-2xl bg-[#08080e] border border-white/10 text-center font-mono-tight text-lg tracking-widest text-white focus:outline-none focus:border-accent"
+									/>
+								</div>
+
+								<div class="flex gap-2">
+									<button
+										type="button"
+										onclick={() => (emailStep = 'input')}
+										class="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-xs text-[#8e8ea0] transition-colors"
+									>
+										Back
+									</button>
+									<button
+										type="submit"
+										disabled={auth.isConnecting}
+										class="flex-1 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-[#08080e] font-bold text-xs font-display transition-all shadow-md disabled:opacity-50"
+									>
+										{auth.isConnecting ? 'Verifying with Privy...' : 'Confirm Code & Authenticate'}
+									</button>
+								</div>
+							</form>
+						{/if}
+						<div class="flex items-center justify-between text-[10px] text-[#606074] font-mono-tight pt-1">
+							<span>Powered by Privy Cloud Auth</span>
+							<span>ID: cmtxc3lq...</span>
+						</div>
+					</div>
+
+				<!-- TAB 3: ADDRESS / ENS LOOKUP -->
+				{:else}
+					<div class="mt-5 space-y-3" in:fade={{ duration: 120 }}>
+						<form onsubmit={handleManualLookup} class="space-y-3">
+							<div>
+								<label for="privy-lookup-input" class="block text-xs text-[#c0c0d4] mb-1.5 font-display">
+									Ethereum Address or ENS
+								</label>
+								<input
+									id="privy-lookup-input"
+									type="text"
+									bind:value={manualAddress}
+									placeholder="0x... or name.eth"
+									required
+									class="w-full px-4 py-3 rounded-2xl bg-[#08080e] border border-white/10 text-xs font-mono-tight text-white placeholder-[#606074] focus:outline-none focus:border-accent"
+								/>
+							</div>
 							<button
 								type="submit"
 								disabled={auth.isConnecting}
-								class="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-xs font-semibold text-white transition-colors"
+								class="w-full py-3 rounded-2xl bg-white text-[#08080e] hover:bg-white/90 font-bold text-xs font-display transition-all disabled:opacity-50 shadow-md"
 							>
-								Lookup
+								{auth.isConnecting ? 'Resolving on Sepolia...' : 'Resolve On-Chain Authority'}
 							</button>
-						</div>
-					</form>
-				</div>
+						</form>
+					</div>
+				{/if}
 			{/if}
 
 			<!-- Real On-Chain Network Info Footer -->
@@ -147,7 +288,7 @@
 					Sepolia (Chain 11155111)
 				</span>
 				<span>
-					Block: #{auth.chainStatus.blockNumber > 0 ? auth.chainStatus.blockNumber.toLocaleString() : '11,683,583'}
+					Block: #{auth.chainStatus.blockNumber > 0 ? auth.chainStatus.blockNumber.toLocaleString() : '11,683,834'}
 				</span>
 			</div>
 		</div>

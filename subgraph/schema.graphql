@@ -1,0 +1,9 @@
+type Product @entity {
+  id: ID!
+  productId: String!
+  manufacturer: String!
+  isAuthentic: Boolean!
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
