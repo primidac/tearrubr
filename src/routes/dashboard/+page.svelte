@@ -603,74 +603,74 @@
 						</div>
 					{:else}
 						<div class="overflow-x-auto">
-							<table class="w-full text-xs text-left">
+							<table class="w-full min-w-[880px] text-xs text-left border-collapse">
 								<thead class="border-b border-white/[0.06] text-[#7a7a8e] uppercase font-mono-tight text-[10px] bg-white/[0.01]">
-									<tr>
-										<th class="px-5 py-3">Product Name & Issuer</th>
-										<th class="px-5 py-3">Batch / LOT</th>
-										<th class="px-5 py-3">Unique ID</th>
-										<th class="px-5 py-3">Seal Status</th>
-										<th class="px-5 py-3">Sepolia Tx</th>
-										<th class="px-5 py-3 text-right">Action</th>
+									<tr class="whitespace-nowrap">
+										<th class="px-5 py-3.5 min-w-[220px]">Product Name & Issuer</th>
+										<th class="px-5 py-3.5 whitespace-nowrap min-w-[180px]">Batch / LOT</th>
+										<th class="px-5 py-3.5 whitespace-nowrap min-w-[140px]">Unique ID</th>
+										<th class="px-5 py-3.5 whitespace-nowrap min-w-[120px]">Seal Status</th>
+										<th class="px-5 py-3.5 whitespace-nowrap min-w-[120px]">Sepolia Tx</th>
+										<th class="px-5 py-3.5 text-right whitespace-nowrap min-w-[120px]">Action</th>
 									</tr>
 								</thead>
 								<tbody class="divide-y divide-white/[0.04]">
 									{#each paginatedProducts as product}
-										<tr class="hover:bg-white/[0.02] transition-colors">
-											<td class="px-5 py-3.5 font-medium text-white">
-												<div class="font-bold text-sm text-white font-display">{product.name}</div>
-												<div class="text-[11px] text-[#8e8ea0]">{product.manufacturer}</div>
+										<tr class="hover:bg-white/[0.02] transition-colors whitespace-nowrap">
+											<td class="px-5 py-3.5 font-medium text-white max-w-[240px]">
+												<div class="font-bold text-sm text-white font-display truncate">{product.name}</div>
+												<div class="text-[11px] text-[#8e8ea0] truncate">{product.manufacturer}</div>
 											</td>
-											<td class="px-5 py-3.5 font-mono-tight">
+											<td class="px-5 py-3.5 font-mono-tight whitespace-nowrap">
 												{#if product.batchNumber}
-													<span class="px-2 py-0.5 rounded bg-indigo-500/15 text-indigo-400 border border-indigo-500/30 text-[11px]">
+													<span class="inline-flex items-center px-2 py-0.5 rounded bg-indigo-500/15 text-indigo-400 border border-indigo-500/30 text-[11px] whitespace-nowrap">
 														LOT: {product.batchNumber} (#{product.serialIndex}/{product.batchQuantity})
 													</span>
 												{:else}
-													<span class="text-[#7a7a8e]">Single Item</span>
+													<span class="text-[#7a7a8e] whitespace-nowrap">Single Item</span>
 												{/if}
 											</td>
-											<td class="px-5 py-3.5 font-mono-tight text-[#8e8ea0]">
+											<td class="px-5 py-3.5 font-mono-tight text-[#8e8ea0] whitespace-nowrap">
 												<button
 													onclick={() => copyToClipboard(product.id, product.id)}
-													class="hover:text-white transition-colors flex items-center gap-1"
+													class="hover:text-white transition-colors inline-flex items-center gap-1.5 whitespace-nowrap"
 													title="Click to copy ID"
 												>
-													<span>{truncate(product.id, 8, 4)}</span>
+													<span class="whitespace-nowrap">{truncate(product.id, 8, 4)}</span>
 													{#if copiedId === product.id}
-														<Check size={11} class="text-emerald-400" />
+														<Check size={11} class="text-emerald-400 shrink-0" />
 													{:else}
-														<Copy size={11} class="text-[#606074]" />
+														<Copy size={11} class="text-[#606074] shrink-0" />
 													{/if}
 												</button>
 											</td>
-											<td class="px-5 py-3.5">
-												<span class="px-2 py-0.5 rounded-full text-[10px] font-mono-tight {product.sealStatus === 'opened' ? 'bg-amber-500/15 text-amber-300 border border-amber-500/30' : 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30'}">
+											<td class="px-5 py-3.5 whitespace-nowrap">
+												<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-mono-tight whitespace-nowrap {product.sealStatus === 'opened' ? 'bg-amber-500/15 text-amber-300 border border-amber-500/30' : 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30'}">
 													{product.sealStatus === 'opened' ? 'Torn / Broken' : 'Seal: Intact'}
 												</span>
 											</td>
-											<td class="px-5 py-3.5 font-mono-tight">
+											<td class="px-5 py-3.5 font-mono-tight whitespace-nowrap">
 												{#if product.blockchainTxHash}
 													<a
 														href="{data.explorerBaseUrl}/tx/{product.blockchainTxHash}"
 														target="_blank"
 														rel="noopener noreferrer"
-														class="text-accent hover:underline flex items-center gap-1"
+														class="text-accent hover:underline inline-flex items-center gap-1 whitespace-nowrap"
 													>
-														<span>{truncate(product.blockchainTxHash, 6, 4)}</span>
-														<ExternalLink size={10} />
+														<span class="whitespace-nowrap">{truncate(product.blockchainTxHash, 6, 4)}</span>
+														<ExternalLink size={10} class="shrink-0" />
 													</a>
 												{:else}
 													<span class="text-[#606074]">—</span>
 												{/if}
 											</td>
-											<td class="px-5 py-3.5 text-right">
+											<td class="px-5 py-3.5 text-right whitespace-nowrap">
 												<a
 													href="/verify/{product.id}"
-													class="px-3 py-1 rounded-full bg-white/10 hover:bg-white/20 text-white font-display text-xs transition-all inline-flex items-center gap-1"
+													class="px-3.5 py-1 rounded-full bg-white/10 hover:bg-white/20 text-white font-display text-xs transition-all inline-flex items-center gap-1.5 whitespace-nowrap shrink-0"
 												>
 													<span>Verify Proof</span>
-													<ArrowRight size={11} />
+													<ArrowRight size={11} class="shrink-0" />
 												</a>
 											</td>
 										</tr>
@@ -769,60 +769,60 @@
 						</div>
 					{:else}
 						<div class="overflow-x-auto">
-							<table class="w-full text-xs text-left">
+							<table class="w-full min-w-[880px] text-xs text-left border-collapse">
 								<thead class="border-b border-white/[0.06] text-[#7a7a8e] uppercase font-mono-tight text-[10px] bg-white/[0.01]">
-									<tr>
-										<th class="px-5 py-3">Batch LOT Number</th>
-										<th class="px-5 py-3">Product Name & Manufacturer</th>
-										<th class="px-5 py-3">Quantity</th>
-										<th class="px-5 py-3">Merkle Root (On-Chain)</th>
-										<th class="px-5 py-3">Sepolia Tx</th>
-										<th class="px-5 py-3">Date Committed</th>
+									<tr class="whitespace-nowrap">
+										<th class="px-5 py-3.5 whitespace-nowrap min-w-[160px]">Batch LOT Number</th>
+										<th class="px-5 py-3.5 min-w-[220px]">Product Name & Manufacturer</th>
+										<th class="px-5 py-3.5 whitespace-nowrap min-w-[120px]">Quantity</th>
+										<th class="px-5 py-3.5 whitespace-nowrap min-w-[150px]">Merkle Root (On-Chain)</th>
+										<th class="px-5 py-3.5 whitespace-nowrap min-w-[120px]">Sepolia Tx</th>
+										<th class="px-5 py-3.5 whitespace-nowrap min-w-[140px]">Date Committed</th>
 									</tr>
 								</thead>
 								<tbody class="divide-y divide-white/[0.04]">
 									{#each paginatedBatches as batch}
-										<tr class="hover:bg-white/[0.02] transition-colors">
-											<td class="px-5 py-3.5 font-bold font-mono-tight text-indigo-400">
+										<tr class="hover:bg-white/[0.02] transition-colors whitespace-nowrap">
+											<td class="px-5 py-3.5 font-bold font-mono-tight text-indigo-400 whitespace-nowrap">
 												{batch.batchNumber}
 											</td>
-											<td class="px-5 py-3.5">
-												<div class="font-bold text-white font-display">{batch.productName}</div>
-												<div class="text-[11px] text-[#8e8ea0]">{batch.manufacturer}</div>
+											<td class="px-5 py-3.5 max-w-[240px]">
+												<div class="font-bold text-white font-display truncate">{batch.productName}</div>
+												<div class="text-[11px] text-[#8e8ea0] truncate">{batch.manufacturer}</div>
 											</td>
-											<td class="px-5 py-3.5 font-mono-tight text-white font-semibold">
+											<td class="px-5 py-3.5 font-mono-tight text-white font-semibold whitespace-nowrap">
 												{batch.quantity.toLocaleString()} units
 											</td>
-											<td class="px-5 py-3.5 font-mono-tight text-[#8e8ea0]">
+											<td class="px-5 py-3.5 font-mono-tight text-[#8e8ea0] whitespace-nowrap">
 												<button
 													onclick={() => copyToClipboard(batch.merkleRoot, batch.id)}
-													class="hover:text-white transition-colors flex items-center gap-1"
+													class="hover:text-white transition-colors inline-flex items-center gap-1.5 whitespace-nowrap"
 													title="Copy Merkle Root"
 												>
-													<span>{truncate(batch.merkleRoot, 8, 6)}</span>
+													<span class="whitespace-nowrap">{truncate(batch.merkleRoot, 8, 6)}</span>
 													{#if copiedId === batch.id}
-														<Check size={11} class="text-emerald-400" />
+														<Check size={11} class="text-emerald-400 shrink-0" />
 													{:else}
-														<Copy size={11} class="text-[#606074]" />
+														<Copy size={11} class="text-[#606074] shrink-0" />
 													{/if}
 												</button>
 											</td>
-											<td class="px-5 py-3.5 font-mono-tight">
+											<td class="px-5 py-3.5 font-mono-tight whitespace-nowrap">
 												{#if batch.blockchainTxHash}
 													<a
 														href="{data.explorerBaseUrl}/tx/{batch.blockchainTxHash}"
 														target="_blank"
 														rel="noopener noreferrer"
-														class="text-accent hover:underline flex items-center gap-1"
+														class="text-accent hover:underline inline-flex items-center gap-1 whitespace-nowrap"
 													>
-														<span>{truncate(batch.blockchainTxHash, 6, 4)}</span>
-														<ExternalLink size={10} />
+														<span class="whitespace-nowrap">{truncate(batch.blockchainTxHash, 6, 4)}</span>
+														<ExternalLink size={10} class="shrink-0" />
 													</a>
 												{:else}
 													<span class="text-[#606074]">—</span>
 												{/if}
 											</td>
-											<td class="px-5 py-3.5 text-[#8e8ea0]">
+											<td class="px-5 py-3.5 text-[#8e8ea0] whitespace-nowrap">
 												{formatDate(batch.createdAt)}
 											</td>
 										</tr>
@@ -910,38 +910,38 @@
 						</div>
 					{:else}
 						<div class="overflow-x-auto">
-							<table class="w-full text-xs text-left">
+							<table class="w-full min-w-[880px] text-xs text-left border-collapse">
 								<thead class="border-b border-white/[0.06] text-[#7a7a8e] uppercase font-mono-tight text-[10px] bg-white/[0.01]">
-									<tr>
-										<th class="px-5 py-3">Product Name</th>
-										<th class="px-5 py-3">LOT / Serial</th>
-										<th class="px-5 py-3">Unique ID</th>
-										<th class="px-5 py-3">Torn / Unsealed At</th>
-										<th class="px-5 py-3 text-right">Audit</th>
+									<tr class="whitespace-nowrap">
+										<th class="px-5 py-3.5 min-w-[220px]">Product Name</th>
+										<th class="px-5 py-3.5 whitespace-nowrap min-w-[180px]">LOT / Serial</th>
+										<th class="px-5 py-3.5 whitespace-nowrap min-w-[140px]">Unique ID</th>
+										<th class="px-5 py-3.5 whitespace-nowrap min-w-[160px]">Torn / Unsealed At</th>
+										<th class="px-5 py-3.5 text-right whitespace-nowrap min-w-[130px]">Audit</th>
 									</tr>
 								</thead>
 								<tbody class="divide-y divide-white/[0.04]">
 									{#each paginatedTampered as item}
-										<tr class="hover:bg-white/[0.02] transition-colors">
-											<td class="px-5 py-3.5 font-bold text-white font-display">
+										<tr class="hover:bg-white/[0.02] transition-colors whitespace-nowrap">
+											<td class="px-5 py-3.5 font-bold text-white font-display whitespace-nowrap">
 												{item.name}
 											</td>
-											<td class="px-5 py-3.5 font-mono-tight text-amber-300">
+											<td class="px-5 py-3.5 font-mono-tight text-amber-300 whitespace-nowrap">
 												{item.batchNumber ? `LOT: ${item.batchNumber} (#${item.serialIndex})` : 'Single Item'}
 											</td>
-											<td class="px-5 py-3.5 font-mono-tight text-[#8e8ea0]">
+											<td class="px-5 py-3.5 font-mono-tight text-[#8e8ea0] whitespace-nowrap">
 												{truncate(item.id, 8, 4)}
 											</td>
-											<td class="px-5 py-3.5 font-mono-tight text-amber-300">
+											<td class="px-5 py-3.5 font-mono-tight text-amber-300 whitespace-nowrap">
 												{item.openedAt ? formatDate(item.openedAt) : 'Logged on-chain'}
 											</td>
-											<td class="px-5 py-3.5 text-right">
+											<td class="px-5 py-3.5 text-right whitespace-nowrap">
 												<a
 													href="/verify/{item.id}"
-													class="px-3 py-1 rounded-full bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 font-display text-xs transition-all inline-flex items-center gap-1"
+													class="px-3.5 py-1 rounded-full bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 font-display text-xs transition-all inline-flex items-center gap-1.5 whitespace-nowrap shrink-0"
 												>
 													<span>View Telemetry</span>
-													<ArrowRight size={11} />
+													<ArrowRight size={11} class="shrink-0" />
 												</a>
 											</td>
 										</tr>
