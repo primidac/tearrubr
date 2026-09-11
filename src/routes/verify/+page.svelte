@@ -9,6 +9,10 @@
 	let filterType = $state<'all' | 'onchain' | 'batches' | 'single'>('all');
 	let copiedId = $state<string | null>(null);
 
+	// Pagination state
+	let currentPage = $state(1);
+	let pageSize = $state(10);
+
 	$effect(() => {
 		if (data.initialQuery) {
 			searchQuery = data.initialQuery;
@@ -39,6 +43,56 @@
 			);
 		})
 	);
+
+	// Pagination derivations
+	let totalPages = $derived(Math.max(1, Math.ceil(filteredProducts.length / pageSize)));
+
+	$effect(() => {
+		// Reset to page 1 whenever filters or query change
+		searchQuery;
+		filterType;
+		pageSize;
+		currentPage = 1;
+	});
+
+	$effect(() => {
+		if (currentPage > totalPages) {
+			currentPage = totalPages;
+		}
+	});
+
+	let paginatedProducts = $derived(
+		filteredProducts.slice((currentPage - 1) * pageSize, currentPage * pageSize)
+	);
+
+	let startIndex = $derived(filteredProducts.length === 0 ? 0 : (currentPage - 1) * pageSize + 1);
+	let endIndex = $derived(Math.min(currentPage * pageSize, filteredProducts.length));
+
+	let visiblePages = $derived.by(() => {
+		const pages: (number | string)[] = [];
+		if (totalPages <= 7) {
+			for (let i = 1; i <= totalPages; i++) pages.push(i);
+		} else {
+			pages.push(1);
+			if (currentPage > 3) pages.push('...');
+			const start = Math.max(2, currentPage - 1);
+			const end = Math.min(totalPages - 1, currentPage + 1);
+			for (let i = start; i <= end; i++) pages.push(i);
+			if (currentPage < totalPages - 2) pages.push('...');
+			pages.push(totalPages);
+		}
+		return pages;
+	});
+
+	function goToPage(p: number) {
+		if (p >= 1 && p <= totalPages) {
+			currentPage = p;
+			const el = document.getElementById('ledger-feed');
+			if (el) {
+				el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+			}
+		}
+	}
 
 	function formatDate(timestamp: Date | number) {
 		const date = timestamp instanceof Date ? timestamp : new Date(Number(timestamp) * 1000);
@@ -149,38 +203,54 @@
 				{/if}
 			</div>
 
-			<!-- Filter Pills -->
-			<div class="flex flex-wrap items-center gap-2 pt-1 text-xs">
-				<button
-					onclick={() => (filterType = 'all')}
-					class="px-4 py-1.5 rounded-full font-medium transition-all {filterType === 'all' ? 'bg-white text-[#08080e] shadow-sm' : 'bg-white/[0.04] text-[#8e8ea0] hover:text-white border border-white/[0.06]'}"
-				>
-					All Records ({data.products.length})
-				</button>
-				<button
-					onclick={() => (filterType = 'onchain')}
-					class="px-4 py-1.5 rounded-full font-medium transition-all flex items-center gap-1.5 {filterType === 'onchain' ? 'bg-emerald-400 text-[#08080e] shadow-sm' : 'bg-white/[0.04] text-[#8e8ea0] hover:text-white border border-white/[0.06]'}"
-				>
-					<span>✓ Sepolia On-Chain</span>
-					<span class="text-[10px] opacity-80 font-mono-tight">({onChainCount})</span>
-				</button>
-				<button
-					onclick={() => (filterType = 'batches')}
-					class="px-4 py-1.5 rounded-full font-medium transition-all {filterType === 'batches' ? 'bg-indigo-400 text-[#08080e] shadow-sm' : 'bg-white/[0.04] text-[#8e8ea0] hover:text-white border border-white/[0.06]'}"
-				>
-					Batch Runs ({batchCount})
-				</button>
-				<button
-					onclick={() => (filterType = 'single')}
-					class="px-4 py-1.5 rounded-full font-medium transition-all {filterType === 'single' ? 'bg-white text-[#08080e] shadow-sm' : 'bg-white/[0.04] text-[#8e8ea0] hover:text-white border border-white/[0.06]'}"
-				>
-					Single Items ({singleCount})
-				</button>
+			<!-- Filter Pills & Page Size Controls -->
+			<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1 text-xs">
+				<!-- Filter Pills -->
+				<div class="flex flex-wrap items-center gap-2">
+					<button
+						onclick={() => (filterType = 'all')}
+						class="px-4 py-1.5 rounded-full font-medium transition-all {filterType === 'all' ? 'bg-white text-[#08080e] shadow-sm' : 'bg-white/[0.04] text-[#8e8ea0] hover:text-white border border-white/[0.06]'}"
+					>
+						All Records ({data.products.length})
+					</button>
+					<button
+						onclick={() => (filterType = 'onchain')}
+						class="px-4 py-1.5 rounded-full font-medium transition-all flex items-center gap-1.5 {filterType === 'onchain' ? 'bg-emerald-400 text-[#08080e] shadow-sm' : 'bg-white/[0.04] text-[#8e8ea0] hover:text-white border border-white/[0.06]'}"
+					>
+						<span>✓ Sepolia On-Chain</span>
+						<span class="text-[10px] opacity-80 font-mono-tight">({onChainCount})</span>
+					</button>
+					<button
+						onclick={() => (filterType = 'batches')}
+						class="px-4 py-1.5 rounded-full font-medium transition-all {filterType === 'batches' ? 'bg-indigo-400 text-[#08080e] shadow-sm' : 'bg-white/[0.04] text-[#8e8ea0] hover:text-white border border-white/[0.06]'}"
+					>
+						Batch Runs ({batchCount})
+					</button>
+					<button
+						onclick={() => (filterType = 'single')}
+						class="px-4 py-1.5 rounded-full font-medium transition-all {filterType === 'single' ? 'bg-white text-[#08080e] shadow-sm' : 'bg-white/[0.04] text-[#8e8ea0] hover:text-white border border-white/[0.06]'}"
+					>
+						Single Items ({singleCount})
+					</button>
+				</div>
+
+				<!-- Page Size Selector -->
+				<div class="flex items-center gap-2 text-[#7a7a8e] font-mono-tight text-[11px] self-end sm:self-auto">
+					<span>Rows:</span>
+					{#each [10, 25, 50] as size}
+						<button
+							onclick={() => (pageSize = size)}
+							class="px-2 py-0.5 rounded-md transition-colors {pageSize === size ? 'bg-white/20 text-white font-bold' : 'text-[#8e8ea0] hover:text-white'}"
+						>
+							{size}
+						</button>
+					{/each}
+				</div>
 			</div>
 		</div>
 
-		<!-- Product Ledger Feed -->
-		<div class="mt-8">
+		<!-- Product Ledger Feed Anchor -->
+		<div id="ledger-feed" class="mt-8 scroll-mt-28">
 			{#if filteredProducts.length === 0}
 				<div class="p-12 rounded-3xl bg-white/[0.02] border border-white/[0.06] text-center backdrop-blur-xl">
 					<div class="text-2xl mb-3">🔍</div>
@@ -199,8 +269,9 @@
 					</button>
 				</div>
 			{:else}
+				<!-- Feed Item Cards -->
 				<div class="grid grid-cols-1 gap-3.5">
-					{#each filteredProducts as product (product.id)}
+					{#each paginatedProducts as product (product.id)}
 						<div
 							class="p-4 sm:p-5 rounded-2xl bg-white/[0.02] hover:bg-white/[0.04] border border-white/[0.08] hover:border-white/[0.15] backdrop-blur-xl transition-all duration-200 shadow-lg group"
 							in:fade={{ duration: 120 }}
@@ -288,6 +359,53 @@
 							</div>
 						</div>
 					{/each}
+				</div>
+
+				<!-- ============================================================= -->
+				<!-- PAGINATION BAR -->
+				<!-- ============================================================= -->
+				<div class="mt-8 p-4 rounded-2xl bg-white/[0.02] border border-white/[0.08] backdrop-blur-xl flex flex-col sm:flex-row items-center justify-between gap-4">
+					<!-- Range indicator -->
+					<div class="text-xs text-[#8e8ea0] font-mono-tight">
+						Showing <strong class="text-white">{startIndex}</strong> – <strong class="text-white">{endIndex}</strong> of <strong class="text-white">{filteredProducts.length}</strong> records
+					</div>
+
+					<!-- Page number buttons -->
+					<div class="flex items-center gap-1.5 text-xs font-display">
+						<!-- Previous Button -->
+						<button
+							onclick={() => goToPage(currentPage - 1)}
+							disabled={currentPage === 1}
+							class="px-3 py-1.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-white disabled:opacity-30 disabled:hover:bg-white/[0.04] transition-all"
+						>
+							← Previous
+						</button>
+
+						<!-- Page Numbers -->
+						<div class="flex items-center gap-1">
+							{#each visiblePages as p}
+								{#if typeof p === 'number'}
+									<button
+										onclick={() => goToPage(p)}
+										class="w-8 h-8 rounded-xl font-mono-tight text-xs transition-all {currentPage === p ? 'bg-white text-[#08080e] font-bold shadow-md' : 'text-[#8e8ea0] hover:text-white hover:bg-white/[0.05]'}"
+									>
+										{p}
+									</button>
+								{:else}
+									<span class="px-1 text-[#606074] font-mono-tight text-xs">…</span>
+								{/if}
+							{/each}
+						</div>
+
+						<!-- Next Button -->
+						<button
+							onclick={() => goToPage(currentPage + 1)}
+							disabled={currentPage === totalPages}
+							class="px-3 py-1.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-white disabled:opacity-30 disabled:hover:bg-white/[0.04] transition-all"
+						>
+							Next →
+						</button>
+					</div>
 				</div>
 			{/if}
 		</div>
