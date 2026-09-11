@@ -183,10 +183,10 @@
 </script>
 
 <svelte:head>
-	<title>Manufacturer Workspace | TearRubr</title>
+	<title>Product Management & Verification Dashboard | TearRubr</title>
 	<meta
 		name="description"
-		content="Enterprise manufacturer dashboard for Ethereum Sepolia batch minting, Merkle proof auditing, and physical seal telemetry."
+		content="Manage certified products, bulk batch issuances, tamper detection alerts, and physical QR seals."
 	/>
 </svelte:head>
 
@@ -220,9 +220,9 @@
 					<div>
 						<div class="text-sm font-extrabold text-white font-display tracking-tight flex items-center gap-1.5">
 							<span>TearRubr</span>
-							<span class="px-1.5 py-0.2 rounded bg-indigo-500/20 text-indigo-400 text-[9px] font-mono-tight">PRO</span>
+							<span class="px-1.5 py-0.5 rounded bg-white/10 text-white text-[9px] font-mono-tight">PRO</span>
 						</div>
-						<div class="text-[10px] text-[#7a7a8e] font-mono-tight">Vault Console</div>
+						<div class="text-[10px] text-[#7a7a8e] font-mono-tight">Operations Console</div>
 					</div>
 				</a>
 
@@ -240,17 +240,17 @@
 			<div class="px-4 py-3 border-b border-white/[0.04]">
 				<div class="px-3 py-2 rounded-xl bg-white/[0.02] border border-white/[0.06] flex items-center justify-between text-xs">
 					<div class="flex items-center gap-2 min-w-0">
-						<span class="w-2 h-2 rounded-full bg-emerald-400"></span>
-						<span class="font-medium text-white truncate">Sepolia Network</span>
+						<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+						<span class="font-medium text-white truncate">Ethereum Sepolia</span>
 					</div>
-					<span class="text-[10px] font-mono-tight text-[#8e8ea0]">11155111</span>
+					<span class="text-[10px] font-mono-tight text-[#8e8ea0]">Live</span>
 				</div>
 			</div>
 
 			<!-- Navigation Links -->
 			<nav class="p-3 space-y-1 text-xs font-display">
 				<div class="px-3 pt-3 pb-1 text-[10px] font-mono-tight uppercase tracking-wider text-[#606074] font-semibold">
-					Workspace
+					Overview
 				</div>
 
 				<button
@@ -258,11 +258,11 @@
 						activeView = 'products';
 						isMobileSidebarOpen = false;
 					}}
-					class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all {activeView === 'products' ? 'bg-white text-[#08080e] font-bold shadow-md' : 'text-[#8e8ea0] hover:text-white hover:bg-white/[0.04]'}"
+					class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all {activeView === 'products' ? 'bg-white text-[#08080e] font-bold shadow-sm' : 'text-[#8e8ea0] hover:text-white hover:bg-white/[0.04]'}"
 				>
 					<div class="flex items-center gap-2.5">
-						<ClipboardList size={16} class={activeView === 'products' ? 'text-[#08080e]' : 'text-indigo-400'} />
-						<span>All Authenticity Records</span>
+						<ClipboardList size={16} class={activeView === 'products' ? 'text-[#08080e]' : 'text-[#8e8ea0]'} />
+						<span>Products</span>
 					</div>
 					<span class="text-[11px] font-mono-tight {activeView === 'products' ? 'text-[#08080e]' : 'text-[#606074]'}">
 						{totalUnits}
@@ -274,11 +274,11 @@
 						activeView = 'batches';
 						isMobileSidebarOpen = false;
 					}}
-					class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all {activeView === 'batches' ? 'bg-white text-[#08080e] font-bold shadow-md' : 'text-[#8e8ea0] hover:text-white hover:bg-white/[0.04]'}"
+					class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all {activeView === 'batches' ? 'bg-white text-[#08080e] font-bold shadow-sm' : 'text-[#8e8ea0] hover:text-white hover:bg-white/[0.04]'}"
 				>
 					<div class="flex items-center gap-2.5">
-						<Boxes size={16} class={activeView === 'batches' ? 'text-[#08080e]' : 'text-cyan-400'} />
-						<span>Batch Merkle Runs</span>
+						<Boxes size={16} class={activeView === 'batches' ? 'text-[#08080e]' : 'text-[#8e8ea0]'} />
+						<span>Batches</span>
 					</div>
 					<span class="text-[11px] font-mono-tight {activeView === 'batches' ? 'text-[#08080e]' : 'text-[#606074]'}">
 						{batchRuns}
@@ -290,14 +290,14 @@
 						activeView = 'qr';
 						isMobileSidebarOpen = false;
 					}}
-					class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all {activeView === 'qr' ? 'bg-cyan-400 text-[#08080e] font-bold shadow-md' : 'text-[#8e8ea0] hover:text-white hover:bg-white/[0.04]'}"
+					class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all {activeView === 'qr' ? 'bg-white text-[#08080e] font-bold shadow-sm' : 'text-[#8e8ea0] hover:text-white hover:bg-white/[0.04]'}"
 				>
 					<div class="flex items-center gap-2.5">
-						<QrCode size={16} class={activeView === 'qr' ? 'text-[#08080e]' : 'text-cyan-400'} />
-						<span>QR Code Studio</span>
+						<QrCode size={16} class={activeView === 'qr' ? 'text-[#08080e]' : 'text-[#8e8ea0]'} />
+						<span>QR Studio</span>
 					</div>
-					<span class="px-1.5 py-0.5 rounded text-[10px] font-mono-tight uppercase {activeView === 'qr' ? 'bg-[#08080e]/20 text-[#08080e] font-bold' : 'bg-cyan-400/10 text-cyan-300 font-semibold'}">
-						Seal Gen
+					<span class="px-1.5 py-0.5 rounded text-[10px] font-mono-tight uppercase {activeView === 'qr' ? 'bg-[#08080e]/10 text-[#08080e] font-semibold' : 'bg-white/[0.05] text-[#8e8ea0]'}">
+						Studio
 					</span>
 				</button>
 
@@ -306,39 +306,39 @@
 						activeView = 'alerts';
 						isMobileSidebarOpen = false;
 					}}
-					class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all {activeView === 'alerts' ? 'bg-amber-400 text-[#08080e] font-bold shadow-md' : 'text-[#8e8ea0] hover:text-white hover:bg-white/[0.04]'}"
+					class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all {activeView === 'alerts' ? 'bg-white text-[#08080e] font-bold shadow-sm' : 'text-[#8e8ea0] hover:text-white hover:bg-white/[0.04]'}"
 				>
 					<div class="flex items-center gap-2.5">
-						<ShieldAlert size={16} class={activeView === 'alerts' ? 'text-[#08080e]' : 'text-amber-400'} />
-						<span>Seal Breach Telemetry</span>
+						<ShieldAlert size={16} class={activeView === 'alerts' ? 'text-[#08080e]' : 'text-[#8e8ea0]'} />
+						<span>Tamper Alerts</span>
 					</div>
 					{#if brokenSeals > 0}
-						<span class="px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-[10px] font-mono-tight font-bold">
+						<span class="px-1.5 py-0.5 rounded-full {activeView === 'alerts' ? 'bg-black/10 text-black' : 'bg-amber-500/20 text-amber-300'} text-[10px] font-mono-tight font-bold">
 							{brokenSeals}
 						</span>
 					{:else}
-						<span class="text-[10px] text-emerald-400 font-mono-tight">0</span>
+						<span class="text-[10px] text-[#606074] font-mono-tight">0</span>
 					{/if}
 				</button>
 
 				<div class="px-3 pt-5 pb-1 text-[10px] font-mono-tight uppercase tracking-wider text-[#606074] font-semibold">
-					Actions & Explorer
+					Quick Actions
 				</div>
 
 				<a
 					href="/register"
-					class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-indigo-300 hover:text-white hover:bg-indigo-500/10 transition-colors"
+					class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-[#8e8ea0] hover:text-white hover:bg-white/[0.04] transition-colors"
 				>
-					<Sparkles size={16} class="text-indigo-400" />
-					<span>+ New Batch Rollup</span>
+					<Sparkles size={16} class="text-[#8e8ea0]" />
+					<span>+ Certify New Batch</span>
 				</a>
 
 				<a
 					href="/verify"
 					class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-[#8e8ea0] hover:text-white hover:bg-white/[0.04] transition-colors"
 				>
-					<Globe size={16} class="text-cyan-400" />
-					<span>Public Ledger</span>
+					<Globe size={16} class="text-[#8e8ea0]" />
+					<span>Product Directory</span>
 				</a>
 
 				<a
@@ -348,8 +348,8 @@
 					class="flex items-center justify-between px-3 py-2.5 rounded-xl text-[#8e8ea0] hover:text-white hover:bg-white/[0.04] transition-colors"
 				>
 					<div class="flex items-center gap-2.5">
-						<ScrollText size={16} class="text-emerald-400" />
-						<span>Sepolia Contract</span>
+						<ScrollText size={16} class="text-[#8e8ea0]" />
+						<span>Smart Contract</span>
 					</div>
 					<ExternalLink size={12} class="text-[#606074]" />
 				</a>
@@ -359,7 +359,7 @@
 					class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-[#8e8ea0] hover:text-white hover:bg-white/[0.04] transition-colors"
 				>
 					<Home size={16} class="text-[#8e8ea0]" />
-					<span>Back to Home</span>
+					<span>Home</span>
 				</a>
 			</nav>
 		</div>
@@ -370,27 +370,27 @@
 				<div class="p-3 rounded-2xl bg-white/[0.03] border border-white/[0.08] space-y-2">
 					<div class="flex items-center justify-between">
 						<div class="flex items-center gap-2">
-							<span class="w-2 h-2 rounded-full {auth.session.isOwner || auth.session.isVerifiedManufacturer ? 'bg-emerald-400' : 'bg-indigo-400'}"></span>
+							<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
 							<span class="text-xs font-bold text-white font-mono-tight">
 								{auth.session.ensName || truncate(auth.session.walletAddress || '', 6, 4)}
 							</span>
 						</div>
 						<button
 							onclick={() => auth.disconnect()}
-							class="text-[10px] text-[#7a7a8e] hover:text-red-400 transition-colors font-display"
-							title="Disconnect Wallet"
+							class="text-[10px] text-[#7a7a8e] hover:text-white transition-colors font-display"
+							title="Sign Out"
 						>
-							Disconnect
+							Sign Out
 						</button>
 					</div>
 
 					<div class="text-[10px] font-mono-tight text-[#8e8ea0]">
 						{#if auth.session.isOwner}
-							<span class="text-emerald-400 font-semibold">✓ Contract Owner</span>
+							<span class="text-white font-semibold">✓ Contract Owner</span>
 						{:else if auth.session.isVerifiedManufacturer}
-							<span class="text-emerald-400 font-semibold">✓ Whitelisted Manufacturer</span>
+							<span class="text-white font-semibold">✓ Verified Manufacturer</span>
 						{:else}
-							<span class="text-[#8e8ea0]">Community Wallet</span>
+							<span class="text-[#8e8ea0]">✓ Signed In</span>
 						{/if}
 					</div>
 
@@ -404,15 +404,15 @@
 				</div>
 			{:else}
 				<div class="p-3 rounded-2xl bg-white/[0.02] border border-white/[0.08] text-center space-y-2">
-					<div class="text-xs font-semibold text-white font-display">Wallet Disconnected</div>
+					<div class="text-xs font-semibold text-white font-display">Sign In / Connect</div>
 					<p class="text-[10px] text-[#7a7a8e] leading-relaxed">
-						Connect Web3 wallet to verify your on-chain manufacturer credentials.
+						Sign in with email, socials, or wallet to manage certified products.
 					</p>
 					<button
 						onclick={() => auth.openModal()}
 						class="w-full py-2 rounded-xl bg-white text-[#08080e] hover:bg-white/90 font-bold text-xs font-display transition-all shadow-sm"
 					>
-						Connect Wallet
+						Sign In / Connect
 					</button>
 				</div>
 			{/if}
@@ -437,16 +437,16 @@
 				</button>
 
 				<div class="flex items-center gap-2 text-xs font-display">
-					<span class="text-[#7a7a8e] hidden sm:inline">Manufacturer Workspace</span>
+					<span class="text-[#7a7a8e] hidden sm:inline">Operations</span>
 					<span class="text-white/20 hidden sm:inline">/</span>
 					<span class="text-white font-bold truncate">
 						{activeView === 'products'
-							? 'Authenticity Ledger'
+							? 'Products'
 							: activeView === 'batches'
-								? 'Batch Rollups'
+								? 'Batches'
 								: activeView === 'alerts'
-									? 'Tamper Telemetry'
-									: 'QR Code Seal Studio'}
+									? 'Tamper Alerts'
+									: 'QR Seal Studio'}
 					</span>
 				</div>
 			</div>
@@ -456,76 +456,70 @@
 				<!-- Live Sepolia Block Status Badge -->
 				<div class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.03] border border-white/[0.08] text-[11px] font-mono-tight text-[#8e8ea0]">
 					<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-					<span>Sepolia #{auth.chainStatus.blockNumber ? auth.chainStatus.blockNumber.toLocaleString() : '11,684,064'}</span>
+					<span>Sepolia #{auth.chainStatus.blockNumber ? auth.chainStatus.blockNumber.toLocaleString() : '—'}</span>
 				</div>
 
 				<a
 					href="/register"
-					class="px-4 py-1.5 rounded-full bg-white text-[#08080e] hover:bg-white/90 font-bold text-xs font-display transition-all shadow-md flex items-center gap-1.5 shrink-0"
+					class="px-4 py-1.5 rounded-lg bg-white text-[#08080e] hover:bg-white/90 font-bold text-xs font-display transition-all shadow-md flex items-center gap-1.5 shrink-0"
 				>
 					<Plus size={14} />
-					<span>New Batch</span>
+					<span>+ New Batch</span>
 				</a>
 			</div>
 		</header>
 
 		<!-- Main Dashboard Canvas -->
 		<main class="flex-1 p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl w-full mx-auto">
-			
-			<!-- Atmospheric Glow Background Accents -->
-			<div class="fixed inset-0 pointer-events-none overflow-hidden select-none z-0">
-				<div class="absolute top-20 right-20 w-[450px] h-[450px] rounded-full bg-[#6366f1]/10 blur-[140px]"></div>
-				<div class="absolute bottom-20 left-40 w-[450px] h-[450px] rounded-full bg-[#10b981]/10 blur-[140px]"></div>
-			</div>
 
-			<!-- Metrics Row (4 Cards) -->
+			<!-- Metrics Row (4 Clean Monochrome Cards) -->
 			<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 relative z-10">
 				<!-- Card 1: Total Units -->
-				<div class="p-5 rounded-2xl bg-[#0c0c16]/90 border border-white/[0.08] backdrop-blur-xl shadow-lg relative overflow-hidden">
+				<div class="p-5 rounded-2xl bg-[#0c0c14] border border-white/[0.08] shadow-sm relative overflow-hidden">
 					<div class="flex items-center justify-between text-xs text-[#8e8ea0] mb-2 font-display">
 						<div class="flex items-center gap-1.5">
-							<Layers size={14} class="text-indigo-400" />
-							<span>Units Minted</span>
+							<Layers size={14} class="text-[#8e8ea0]" />
+							<span>Total Products</span>
 						</div>
-						<span class="text-emerald-400 font-mono-tight text-[10px]">On-Chain ✓</span>
+						<span class="text-[#8e8ea0] font-mono-tight text-[10px]">Verified</span>
 					</div>
 					<div class="text-3xl font-extrabold text-white font-display">
 						{totalUnits}
 					</div>
 					<div class="text-[11px] text-[#7a7a8e] mt-1.5 font-mono-tight">
-						Indexed on Ethereum Sepolia
+						All registered inventory
 					</div>
 				</div>
 
 				<!-- Card 2: Batch Runs -->
-				<div class="p-5 rounded-2xl bg-[#0c0c16]/90 border border-white/[0.08] backdrop-blur-xl shadow-lg relative overflow-hidden">
+				<div class="p-5 rounded-2xl bg-[#0c0c14] border border-white/[0.08] shadow-sm relative overflow-hidden">
 					<div class="flex items-center justify-between text-xs text-[#8e8ea0] mb-2 font-display">
 						<div class="flex items-center gap-1.5">
-							<Boxes size={14} class="text-cyan-400" />
-							<span>Merkle Batches</span>
+							<Boxes size={14} class="text-[#8e8ea0]" />
+							<span>Certified Batches</span>
 						</div>
-						<span class="text-indigo-400 font-mono-tight text-[10px]">1 Tx / Batch</span>
+						<span class="text-[#8e8ea0] font-mono-tight text-[10px]">Bulk Runs</span>
 					</div>
-					<div class="text-3xl font-extrabold text-indigo-400 font-display">
+					<div class="text-3xl font-extrabold text-white font-display">
 						{batchRuns}
 					</div>
 					<div class="text-[11px] text-[#7a7a8e] mt-1.5 font-mono-tight">
-						Industrial batch rollups
+						Aggregated production lots
 					</div>
 				</div>
 
 				<!-- Card 3: Seal Integrity -->
-				<div class="p-5 rounded-2xl bg-[#0c0c16]/90 border border-white/[0.08] backdrop-blur-xl shadow-lg relative overflow-hidden">
+				<div class="p-5 rounded-2xl bg-[#0c0c14] border border-white/[0.08] shadow-sm relative overflow-hidden">
 					<div class="flex items-center justify-between text-xs text-[#8e8ea0] mb-2 font-display">
 						<div class="flex items-center gap-1.5">
-							<ShieldCheck size={14} class={brokenSeals === 0 ? 'text-emerald-400' : 'text-amber-400'} />
-							<span>Seal Integrity Rate</span>
+							<ShieldCheck size={14} class="text-[#8e8ea0]" />
+							<span>Seal Integrity</span>
 						</div>
 						<span class="font-mono-tight text-[10px] {brokenSeals === 0 ? 'text-emerald-400' : 'text-amber-400'}">
-							{brokenSeals === 0 ? 'Zero Breaches' : `${brokenSeals} Opened`}
+							{brokenSeals === 0 ? '● 0 Breaches' : `● ${brokenSeals} Opened`}
 						</span>
 					</div>
-					<div class="text-3xl font-extrabold {intactRate === 100 ? 'text-emerald-400' : 'text-white'} font-display">
+					<div class="text-3xl font-extrabold text-white font-display">
 						{intactRate}%
 					</div>
 					<div class="text-[11px] text-[#7a7a8e] mt-1.5 font-mono-tight">
@@ -534,25 +528,25 @@
 				</div>
 
 				<!-- Card 4: Smart Contract Status -->
-				<div class="p-5 rounded-2xl bg-[#0c0c16]/90 border border-white/[0.08] backdrop-blur-xl shadow-lg relative overflow-hidden">
+				<div class="p-5 rounded-2xl bg-[#0c0c14] border border-white/[0.08] shadow-sm relative overflow-hidden">
 					<div class="flex items-center justify-between text-xs text-[#8e8ea0] mb-2 font-display">
 						<div class="flex items-center gap-1.5">
-							<Activity size={14} class="text-accent" />
-							<span>Contract Authority</span>
+							<Activity size={14} class="text-[#8e8ea0]" />
+							<span>Smart Contract</span>
 						</div>
-						<span class="text-accent font-mono-tight text-[10px]">Active</span>
+						<span class="text-[#8e8ea0] font-mono-tight text-[10px]">Active</span>
 					</div>
 					<div class="text-sm font-bold text-white font-mono-tight mt-1 truncate">
 						{truncate(data.contractAddress, 8, 6)}
 					</div>
-					<div class="text-[11px] text-accent mt-2 font-display">
+					<div class="text-[11px] text-[#8e8ea0] mt-2 font-display">
 						<a
 							href="{data.explorerBaseUrl}/address/{data.contractAddress}"
 							target="_blank"
 							rel="noopener noreferrer"
-							class="hover:underline flex items-center gap-1"
+							class="hover:text-white flex items-center gap-1 transition-colors"
 						>
-							<span>View on Sepolia Etherscan</span>
+							<span>View on Etherscan</span>
 							<ExternalLink size={12} />
 						</a>
 					</div>
@@ -567,44 +561,44 @@
 						<input
 							type="text"
 							bind:value={searchQuery}
-							placeholder="Search by product, lot number, or transaction hash..."
-							class="w-full pl-9 pr-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.08] hover:border-white/[0.15] text-xs text-white placeholder-[#606074] focus:outline-none focus:border-accent transition-all"
+							placeholder="Search by product name, lot #, or ID..."
+							class="w-full pl-9 pr-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.08] hover:border-white/[0.15] text-xs text-white placeholder-[#606074] focus:outline-none focus:border-white/30 transition-all"
 						/>
 						<Search size={14} class="absolute left-3 top-3 text-[#606074]" />
 					</div>
 				{:else}
 					<div class="flex items-center gap-2 text-xs text-[#8e8ea0]">
-						<span class="px-2.5 py-1 rounded-lg bg-cyan-500/10 text-cyan-300 font-mono-tight border border-cyan-500/20 text-[11px] font-bold">Vector & Print Ready</span>
+						<span class="px-2.5 py-1 rounded-lg bg-white/[0.06] text-white font-mono-tight border border-white/10 text-[11px] font-bold">Print Ready</span>
 						<span class="hidden sm:inline">Affix tamper-evident physical QR seals directly to packaging seams</span>
 					</div>
 				{/if}
 
-				<!-- View tabs -->
-				<div class="flex items-center gap-1.5 p-1 rounded-xl bg-white/[0.03] border border-white/[0.08] text-xs font-display self-start sm:self-auto">
+				<!-- View tabs (Clean Monochrome Style) -->
+				<div class="flex items-center gap-1 p-1 rounded-xl bg-white/[0.03] border border-white/[0.08] text-xs font-display self-start sm:self-auto">
 					<button
 						onclick={() => (activeView = 'products')}
-						class="px-3.5 py-1.5 rounded-lg transition-all flex items-center gap-1.5 {activeView === 'products' ? 'bg-white text-[#08080e] font-bold shadow' : 'text-[#8e8ea0] hover:text-white'}"
+						class="px-3.5 py-1.5 rounded-lg transition-all flex items-center gap-1.5 {activeView === 'products' ? 'bg-white text-[#08080e] font-bold shadow-sm' : 'text-[#8e8ea0] hover:text-white'}"
 					>
 						<ClipboardList size={13} />
 						<span>Products ({data.products.length})</span>
 					</button>
 					<button
 						onclick={() => (activeView = 'batches')}
-						class="px-3.5 py-1.5 rounded-lg transition-all flex items-center gap-1.5 {activeView === 'batches' ? 'bg-white text-[#08080e] font-bold shadow' : 'text-[#8e8ea0] hover:text-white'}"
+						class="px-3.5 py-1.5 rounded-lg transition-all flex items-center gap-1.5 {activeView === 'batches' ? 'bg-white text-[#08080e] font-bold shadow-sm' : 'text-[#8e8ea0] hover:text-white'}"
 					>
 						<Boxes size={13} />
 						<span>Batches ({data.batches?.length || 0})</span>
 					</button>
 					<button
 						onclick={() => (activeView = 'alerts')}
-						class="px-3.5 py-1.5 rounded-lg transition-all flex items-center gap-1.5 {activeView === 'alerts' ? 'bg-amber-400 text-[#08080e] font-bold shadow' : 'text-[#8e8ea0] hover:text-white'}"
+						class="px-3.5 py-1.5 rounded-lg transition-all flex items-center gap-1.5 {activeView === 'alerts' ? 'bg-white text-[#08080e] font-bold shadow-sm' : 'text-[#8e8ea0] hover:text-white'}"
 					>
 						<ShieldAlert size={13} />
-						<span>Breaches ({brokenSeals})</span>
+						<span>Tamper Alerts ({brokenSeals})</span>
 					</button>
 					<button
 						onclick={() => (activeView = 'qr')}
-						class="px-3.5 py-1.5 rounded-lg transition-all flex items-center gap-1.5 {activeView === 'qr' ? 'bg-cyan-400 text-[#08080e] font-bold shadow' : 'text-[#8e8ea0] hover:text-white'}"
+						class="px-3.5 py-1.5 rounded-lg transition-all flex items-center gap-1.5 {activeView === 'qr' ? 'bg-white text-[#08080e] font-bold shadow-sm' : 'text-[#8e8ea0] hover:text-white'}"
 					>
 						<QrCode size={13} />
 						<span>QR Studio</span>
@@ -619,27 +613,27 @@
 				<div class="rounded-2xl bg-[#0c0c16]/90 border border-white/[0.08] backdrop-blur-2xl shadow-xl overflow-hidden relative z-10" in:fade={{ duration: 150 }}>
 					<div class="p-5 border-b border-white/[0.06] flex items-center justify-between">
 						<div>
-							<h2 class="text-sm font-bold text-white font-display">Authenticity Registry</h2>
-							<p class="text-xs text-[#8e8ea0] mt-0.5">Direct records anchored on Ethereum Sepolia</p>
+							<h2 class="text-sm font-bold text-white font-display">Product Inventory</h2>
+							<p class="text-xs text-[#8e8ea0] mt-0.5">Certified records anchored on the blockchain</p>
 						</div>
-						<div class="flex items-center gap-2">
+						<div class="flex items-center gap-1.5">
 							<button
 								onclick={() => (statusFilter = 'all')}
-								class="px-2.5 py-1 rounded-lg text-[11px] font-mono-tight transition-colors {statusFilter === 'all' ? 'bg-white/10 text-white font-bold' : 'text-[#7a7a8e] hover:text-white'}"
+								class="px-3 py-1 rounded-lg text-xs font-mono-tight transition-colors {statusFilter === 'all' ? 'bg-white text-black font-bold shadow-sm' : 'text-[#8e8ea0] hover:text-white hover:bg-white/[0.04]'}"
 							>
 								All ({data.products.length})
 							</button>
 							<button
 								onclick={() => (statusFilter = 'sealed')}
-								class="px-2.5 py-1 rounded-lg text-[11px] font-mono-tight transition-colors {statusFilter === 'sealed' ? 'bg-emerald-500/20 text-emerald-400 font-bold' : 'text-[#7a7a8e] hover:text-white'}"
+								class="px-3 py-1 rounded-lg text-xs font-mono-tight transition-colors {statusFilter === 'sealed' ? 'bg-white text-black font-bold shadow-sm' : 'text-[#8e8ea0] hover:text-white hover:bg-white/[0.04]'}"
 							>
-								Sealed ({intactSeals})
+								Factory Sealed ({intactSeals})
 							</button>
 							<button
 								onclick={() => (statusFilter = 'opened')}
-								class="px-2.5 py-1 rounded-lg text-[11px] font-mono-tight transition-colors {statusFilter === 'opened' ? 'bg-amber-500/20 text-amber-300 font-bold' : 'text-[#7a7a8e] hover:text-white'}"
+								class="px-3 py-1 rounded-lg text-xs font-mono-tight transition-colors {statusFilter === 'opened' ? 'bg-white text-black font-bold shadow-sm' : 'text-[#8e8ea0] hover:text-white hover:bg-white/[0.04]'}"
 							>
-								Torn ({brokenSeals})
+								Seal Opened ({brokenSeals})
 							</button>
 						</div>
 					</div>
@@ -653,12 +647,12 @@
 							<table class="w-full min-w-[880px] text-xs text-left border-collapse">
 								<thead class="border-b border-white/[0.06] text-[#7a7a8e] uppercase font-mono-tight text-[10px] bg-white/[0.01]">
 									<tr class="whitespace-nowrap">
-										<th class="px-5 py-3.5 min-w-[220px]">Product Name & Issuer</th>
+										<th class="px-5 py-3.5 min-w-[220px]">Product & Manufacturer</th>
 										<th class="px-5 py-3.5 whitespace-nowrap min-w-[180px]">Batch / LOT</th>
-										<th class="px-5 py-3.5 whitespace-nowrap min-w-[140px]">Unique ID</th>
+										<th class="px-5 py-3.5 whitespace-nowrap min-w-[140px]">Product ID</th>
 										<th class="px-5 py-3.5 whitespace-nowrap min-w-[120px]">Seal Status</th>
-										<th class="px-5 py-3.5 whitespace-nowrap min-w-[120px]">Sepolia Tx</th>
-										<th class="px-5 py-3.5 text-right whitespace-nowrap min-w-[120px]">Action</th>
+										<th class="px-5 py-3.5 whitespace-nowrap min-w-[130px]">Transaction / Proof</th>
+										<th class="px-5 py-3.5 text-right whitespace-nowrap min-w-[140px]">Action</th>
 									</tr>
 								</thead>
 								<tbody class="divide-y divide-white/[0.04]">
@@ -670,7 +664,7 @@
 											</td>
 											<td class="px-5 py-3.5 font-mono-tight whitespace-nowrap">
 												{#if product.batchNumber}
-													<span class="inline-flex items-center px-2 py-0.5 rounded bg-indigo-500/15 text-indigo-400 border border-indigo-500/30 text-[11px] whitespace-nowrap">
+													<span class="inline-flex items-center px-2 py-0.5 rounded bg-white/[0.05] text-white border border-white/10 text-[11px] whitespace-nowrap">
 														LOT: {product.batchNumber} (#{product.serialIndex}/{product.batchQuantity})
 													</span>
 												{:else}
@@ -685,16 +679,24 @@
 												>
 													<span class="whitespace-nowrap">{truncate(product.id, 8, 4)}</span>
 													{#if copiedId === product.id}
-														<Check size={11} class="text-emerald-400 shrink-0" />
+														<Check size={11} class="text-white shrink-0" />
 													{:else}
 														<Copy size={11} class="text-[#606074] shrink-0" />
 													{/if}
 												</button>
 											</td>
-											<td class="px-5 py-3.5 whitespace-nowrap">
-												<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-mono-tight whitespace-nowrap {product.sealStatus === 'opened' ? 'bg-amber-500/15 text-amber-300 border border-amber-500/30' : 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30'}">
-													{product.sealStatus === 'opened' ? 'Torn / Broken' : 'Seal: Intact'}
-												</span>
+											<td class="px-5 py-3.5 whitespace-nowrap font-mono-tight">
+												{#if product.sealStatus === 'opened'}
+													<span class="inline-flex items-center gap-1.5 text-amber-400 text-xs">
+														<span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+														<span>Seal Opened</span>
+													</span>
+												{:else}
+													<span class="inline-flex items-center gap-1.5 text-emerald-400 text-xs">
+														<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+														<span>Factory Sealed</span>
+													</span>
+												{/if}
 											</td>
 											<td class="px-5 py-3.5 font-mono-tight whitespace-nowrap">
 												{#if product.blockchainTxHash}
@@ -702,7 +704,7 @@
 														href="{data.explorerBaseUrl}/tx/{product.blockchainTxHash}"
 														target="_blank"
 														rel="noopener noreferrer"
-														class="text-accent hover:underline inline-flex items-center gap-1 whitespace-nowrap"
+														class="text-[#8e8ea0] hover:text-white inline-flex items-center gap-1 whitespace-nowrap transition-colors"
 													>
 														<span class="whitespace-nowrap">{truncate(product.blockchainTxHash, 6, 4)}</span>
 														<ExternalLink size={10} class="shrink-0" />
@@ -715,7 +717,7 @@
 												<div class="flex items-center justify-end gap-2">
 													<button
 														onclick={() => openQrStudioFor(product.id)}
-														class="px-2.5 py-1 rounded-full bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/25 font-display text-xs transition-all inline-flex items-center gap-1 whitespace-nowrap shrink-0"
+														class="px-2.5 py-1.5 rounded-lg bg-white/[0.05] hover:bg-white/[0.1] text-white border border-white/10 font-display text-xs transition-all inline-flex items-center gap-1 whitespace-nowrap shrink-0"
 														title="Generate & Print Tamper-Evident QR Seal"
 													>
 														<QrCode size={11} class="shrink-0" />
@@ -723,9 +725,9 @@
 													</button>
 													<a
 														href="/verify/{product.id}"
-														class="px-3.5 py-1 rounded-full bg-white/10 hover:bg-white/20 text-white font-display text-xs transition-all inline-flex items-center gap-1.5 whitespace-nowrap shrink-0"
+														class="px-3 py-1.5 rounded-lg bg-white text-black font-semibold hover:bg-white/90 font-display text-xs transition-all inline-flex items-center gap-1.5 whitespace-nowrap shrink-0"
 													>
-														<span>Verify Proof</span>
+														<span>View Certificate</span>
 														<ArrowRight size={11} class="shrink-0" />
 													</a>
 												</div>
@@ -808,39 +810,39 @@
 				<div class="rounded-2xl bg-[#0c0c16]/90 border border-white/[0.08] backdrop-blur-2xl shadow-xl overflow-hidden relative z-10" in:fade={{ duration: 150 }}>
 					<div class="p-5 border-b border-white/[0.06] flex items-center justify-between">
 						<div>
-							<h2 class="text-sm font-bold text-white font-display">Industrial Merkle Batch Rollups</h2>
-							<p class="text-xs text-[#8e8ea0] mt-0.5">High-volume production runs committed in 1 single Ethereum transaction</p>
+							<h2 class="text-sm font-bold text-white font-display">Production Batches</h2>
+							<p class="text-xs text-[#8e8ea0] mt-0.5">Bulk certified lots registered on Ethereum in a single transaction</p>
 						</div>
 						<a
 							href="/register"
-							class="px-3 py-1.5 rounded-full bg-white text-[#08080e] hover:bg-white/90 text-xs font-bold font-display flex items-center gap-1"
+							class="px-3 py-1.5 rounded-lg bg-white text-[#08080e] hover:bg-white/90 text-xs font-bold font-display flex items-center gap-1"
 						>
 							<Plus size={13} />
-							<span>Mint New Batch</span>
+							<span>+ New Batch</span>
 						</a>
 					</div>
 
 					{#if filteredBatches.length === 0}
 						<div class="p-12 text-center text-xs text-[#8e8ea0]">
-							No batch runs registered yet. Click "+ Mint New Batch" to roll up your first industrial lot.
+							No batch runs registered yet. Click "+ New Batch" to certify your first bulk lot.
 						</div>
 					{:else}
 						<div class="overflow-x-auto">
 							<table class="w-full min-w-[880px] text-xs text-left border-collapse">
 								<thead class="border-b border-white/[0.06] text-[#7a7a8e] uppercase font-mono-tight text-[10px] bg-white/[0.01]">
 									<tr class="whitespace-nowrap">
-										<th class="px-5 py-3.5 whitespace-nowrap min-w-[160px]">Batch LOT Number</th>
-										<th class="px-5 py-3.5 min-w-[220px]">Product Name & Manufacturer</th>
-										<th class="px-5 py-3.5 whitespace-nowrap min-w-[120px]">Quantity</th>
-										<th class="px-5 py-3.5 whitespace-nowrap min-w-[150px]">Merkle Root (On-Chain)</th>
-										<th class="px-5 py-3.5 whitespace-nowrap min-w-[120px]">Sepolia Tx</th>
-										<th class="px-5 py-3.5 whitespace-nowrap min-w-[140px]">Date Committed</th>
+										<th class="px-5 py-3.5 whitespace-nowrap min-w-[160px]">Batch / LOT</th>
+										<th class="px-5 py-3.5 min-w-[220px]">Product & Manufacturer</th>
+										<th class="px-5 py-3.5 whitespace-nowrap min-w-[120px]">Units</th>
+										<th class="px-5 py-3.5 whitespace-nowrap min-w-[150px]">Batch Merkle Root</th>
+										<th class="px-5 py-3.5 whitespace-nowrap min-w-[120px]">Transaction</th>
+										<th class="px-5 py-3.5 whitespace-nowrap min-w-[140px]">Created</th>
 									</tr>
 								</thead>
 								<tbody class="divide-y divide-white/[0.04]">
 									{#each paginatedBatches as batch}
 										<tr class="hover:bg-white/[0.02] transition-colors whitespace-nowrap">
-											<td class="px-5 py-3.5 font-bold font-mono-tight text-indigo-400 whitespace-nowrap">
+											<td class="px-5 py-3.5 font-bold font-mono-tight text-white whitespace-nowrap">
 												{batch.batchNumber}
 											</td>
 											<td class="px-5 py-3.5 max-w-[240px]">
@@ -858,7 +860,7 @@
 												>
 													<span class="whitespace-nowrap">{truncate(batch.merkleRoot, 8, 6)}</span>
 													{#if copiedId === batch.id}
-														<Check size={11} class="text-emerald-400 shrink-0" />
+														<Check size={11} class="text-white shrink-0" />
 													{:else}
 														<Copy size={11} class="text-[#606074] shrink-0" />
 													{/if}
@@ -870,7 +872,7 @@
 														href="{data.explorerBaseUrl}/tx/{batch.blockchainTxHash}"
 														target="_blank"
 														rel="noopener noreferrer"
-														class="text-accent hover:underline inline-flex items-center gap-1 whitespace-nowrap"
+														class="text-[#8e8ea0] hover:text-white inline-flex items-center gap-1 whitespace-nowrap transition-colors"
 													>
 														<span class="whitespace-nowrap">{truncate(batch.blockchainTxHash, 6, 4)}</span>
 														<ExternalLink size={10} class="shrink-0" />
@@ -946,20 +948,20 @@
 				<div class="rounded-2xl bg-[#0c0c16]/90 border border-white/[0.08] backdrop-blur-2xl shadow-xl overflow-hidden relative z-10" in:fade={{ duration: 150 }}>
 					<div class="p-5 border-b border-white/[0.06] flex items-center justify-between">
 						<div>
-							<h2 class="text-sm font-bold text-amber-300 font-display flex items-center gap-2">
-								<ShieldAlert size={16} class="text-amber-400" />
-								<span>Physical Tamper-Evident Seal Breaches</span>
+							<h2 class="text-sm font-bold text-white font-display flex items-center gap-2">
+								<ShieldAlert size={16} class="text-[#8e8ea0]" />
+								<span>Tamper Alerts & Unsealed Products</span>
 							</h2>
-							<p class="text-xs text-[#8e8ea0] mt-0.5">Products whose physical tear seals have been broken in the field</p>
+							<p class="text-xs text-[#8e8ea0] mt-0.5">Products whose physical tear seals have been reported opened</p>
 						</div>
-						<span class="px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-300 text-xs font-mono-tight border border-amber-500/20">
-							{tamperedProducts.length} Breaches
+						<span class="px-2.5 py-1 rounded-full bg-white/[0.05] text-[#8e8ea0] text-xs font-mono-tight border border-white/10">
+							{tamperedProducts.length} Alerts
 						</span>
 					</div>
 
 					{#if tamperedProducts.length === 0}
 						<div class="p-12 text-center text-xs text-[#8e8ea0]">
-							<div class="w-10 h-10 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto mb-3">
+							<div class="w-10 h-10 rounded-2xl bg-white/[0.05] border border-white/10 text-white flex items-center justify-center mx-auto mb-3">
 								<ShieldCheck size={22} />
 							</div>
 							<div class="text-white font-bold font-display text-sm">Zero Physical Breaches Detected</div>
@@ -970,11 +972,11 @@
 							<table class="w-full min-w-[880px] text-xs text-left border-collapse">
 								<thead class="border-b border-white/[0.06] text-[#7a7a8e] uppercase font-mono-tight text-[10px] bg-white/[0.01]">
 									<tr class="whitespace-nowrap">
-										<th class="px-5 py-3.5 min-w-[220px]">Product Name</th>
+										<th class="px-5 py-3.5 min-w-[220px]">Product</th>
 										<th class="px-5 py-3.5 whitespace-nowrap min-w-[180px]">LOT / Serial</th>
-										<th class="px-5 py-3.5 whitespace-nowrap min-w-[140px]">Unique ID</th>
-										<th class="px-5 py-3.5 whitespace-nowrap min-w-[160px]">Torn / Unsealed At</th>
-										<th class="px-5 py-3.5 text-right whitespace-nowrap min-w-[130px]">Audit</th>
+										<th class="px-5 py-3.5 whitespace-nowrap min-w-[140px]">Product ID</th>
+										<th class="px-5 py-3.5 whitespace-nowrap min-w-[160px]">Unsealed Date</th>
+										<th class="px-5 py-3.5 text-right whitespace-nowrap min-w-[130px]">Action</th>
 									</tr>
 								</thead>
 								<tbody class="divide-y divide-white/[0.04]">
@@ -983,21 +985,21 @@
 											<td class="px-5 py-3.5 font-bold text-white font-display whitespace-nowrap">
 												{item.name}
 											</td>
-											<td class="px-5 py-3.5 font-mono-tight text-amber-300 whitespace-nowrap">
+											<td class="px-5 py-3.5 font-mono-tight text-white whitespace-nowrap">
 												{item.batchNumber ? `LOT: ${item.batchNumber} (#${item.serialIndex})` : 'Single Item'}
 											</td>
 											<td class="px-5 py-3.5 font-mono-tight text-[#8e8ea0] whitespace-nowrap">
 												{truncate(item.id, 8, 4)}
 											</td>
-											<td class="px-5 py-3.5 font-mono-tight text-amber-300 whitespace-nowrap">
+											<td class="px-5 py-3.5 font-mono-tight text-[#8e8ea0] whitespace-nowrap">
 												{item.openedAt ? formatDate(item.openedAt) : 'Logged on-chain'}
 											</td>
 											<td class="px-5 py-3.5 text-right whitespace-nowrap">
 												<a
 													href="/verify/{item.id}"
-													class="px-3.5 py-1 rounded-full bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 font-display text-xs transition-all inline-flex items-center gap-1.5 whitespace-nowrap shrink-0"
+													class="px-3 py-1.5 rounded-lg bg-white text-black font-semibold hover:bg-white/90 font-display text-xs transition-all inline-flex items-center gap-1.5 whitespace-nowrap shrink-0"
 												>
-													<span>View Telemetry</span>
+													<span>View Certificate</span>
 													<ArrowRight size={11} class="shrink-0" />
 												</a>
 											</td>

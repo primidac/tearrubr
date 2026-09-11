@@ -17,23 +17,29 @@ export async function load({ url }) {
 		const isGraphActive = isSubgraphConfigured() && (graphMeta !== null || graphProducts.length > 0);
 
 		// Enrich db products with The Graph data if available
-		const enrichedProducts = allProducts.map((p) => {
+		// Conceal unique product ID for products that have NOT been opened yet
+		const enrichedProducts = allProducts.map((p, index) => {
 			const graphMatch = graphProducts.find((gp) => gp.productId === p.id);
-			if (graphMatch) {
-				return {
-					...p,
-					blockchainTxHash: graphMatch.transactionHash || p.blockchainTxHash,
-					blockNumber: Number(graphMatch.blockNumber) || 0,
-					isAuthentic: graphMatch.isAuthentic,
-					indexedByGraph: true
-				};
-			}
+			const isOpened = p.sealStatus === 'opened';
+			const txHash = graphMatch?.transactionHash || p.blockchainTxHash;
+			const blockNum = Number(graphMatch?.blockNumber) || 0;
+			const isAuth = graphMatch ? graphMatch.isAuthentic : true;
+
 			return {
 				...p,
-				blockNumber: 0,
-				indexedByGraph: false
+				// Unique ID is only exposed if seal has ALREADY been broken/verified
+				id: isOpened ? p.id : null,
+				// Safe public key for UI iteration without exposing unsealed secret ID
+				displayKey: isOpened ? p.id : `sealed-${p.batchId || 'single'}-${p.serialIndex || index}-${p.createdAt instanceof Date ? p.createdAt.getTime() : p.createdAt}`,
+				isIdConcealed: !isOpened,
+				blockchainTxHash: txHash,
+				blockNumber: blockNum,
+				isAuthentic: isAuth,
+				indexedByGraph: Boolean(graphMatch)
 			};
 		});
+
+		const initialIdQuery = url.searchParams.get('id') || url.searchParams.get('q') || '';
 
 		return {
 			products: enrichedProducts,
@@ -41,7 +47,7 @@ export async function load({ url }) {
 			contractAddress: CONTRACT_ADDRESS,
 			explorerBaseUrl: EXPLORER_BASE_URL,
 			network: 'Ethereum Sepolia',
-			initialQuery: url.searchParams.get('q') || '',
+			initialQuery: initialIdQuery,
 			isTheGraphActive: isGraphActive,
 			graphMeta
 		};

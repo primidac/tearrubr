@@ -143,12 +143,12 @@ TearRubr is designed as a modular system:
                                    │
                     ┌──────────────┴──────────────┐
                     ▼                             ▼
-             ┌──────────────┐              ┌──────────────┐
-             │  PostgreSQL  │              │ Smart Contract│
-             │              │              │               │
-             │ Application  │              │ Verification  │
-             │ data         │              │ records       │
-             └──────────────┘              └───────┬───────┘
+              ┌──────────────┐              ┌──────────────┐
+              │ SQLite / ORM │              │ Smart Contract│
+              │              │              │               │
+              │ Application  │              │ Verification  │
+              │ data         │              │ records       │
+              └──────────────┘              └───────┬───────┘
                                                    │
                                                    ▼
                                                Blockchain
@@ -166,11 +166,11 @@ The API handles application logic that does not belong directly on-chain, includ
 
 ### Database
 
-**PostgreSQL**
+**SQLite (via better-sqlite3 + Drizzle ORM)**
 
-PostgreSQL stores application data that does not need blockchain-level immutability.
+SQLite stores application data that does not need blockchain-level immutability.
 
-This keeps the system efficient and avoids putting unnecessary data on-chain.
+This keeps the system efficient, zero-config, and avoids putting unnecessary data on-chain.
 
 ### Blockchain
 
@@ -304,15 +304,17 @@ The important part is that the customer does not need to understand wallets, sma
 
 | Layer            | Technology             |
 | ---------------- | ---------------------- |
-| Frontend         | SvelteKit              |
+| Frontend         | SvelteKit 2 + Svelte 5  |
 | Language         | TypeScript             |
-| Styling          | Tailwind CSS           |
-| Backend          | API service            |
-| Database         | PostgreSQL             |
+| Styling          | Tailwind CSS 4         |
+| Backend          | SvelteKit API routes   |
+| Database         | SQLite (better-sqlite3 + Drizzle ORM) |
 | Smart Contracts  | Solidity               |
-| Blockchain       | EVM-compatible network |
+| Blockchain       | Ethereum Sepolia       |
+| Indexing         | The Graph Protocol     |
+| Auth             | Web3 Wallet + Privy OTP |
 | Product Identity | QR / Serial / NFC      |
-| Development      | Node.js                |
+| Development      | Node.js + Vite         |
 
 The stack is intentionally modular so individual components can be replaced without redesigning the entire system.
 
@@ -418,12 +420,15 @@ http://localhost:5173
 
 ## Environment Variables
 
-Create a `.env` file for local development:
+Create a `.env` file for local development (see `.env.example`):
 
 ```env
-DATABASE_URL=
-BLOCKCHAIN_RPC_URL=
-CONTRACT_ADDRESS=
+BLOCKCHAIN_RPC_URL=https://eth-sepolia.g.alchemy.com/v2/YOUR_KEY
+PRIVATE_KEY=your_sepolia_private_key
+CONTRACT_ADDRESS=0xa34C7D37BB2bf41f73e562075878E86eFc7Ed05B
+PUBLIC_SUBGRAPH_URL=https://api.studio.thegraph.com/query/YOUR_ID/tearrubr-sepolia/v0.0.1
+PUBLIC_PRIVY_APP_ID=your_privy_app_id
+PRIVY_APP_SECRET=your_privy_app_secret
 ```
 
 Never commit private keys, API secrets, or other credentials to the repository.
@@ -432,11 +437,35 @@ Never commit private keys, API secrets, or other credentials to the repository.
 
 ## Project Status
 
-TearRubr is currently being developed as a proof of concept.
+TearRubr has been developed as a functional proof of concept with production-quality features:
 
-The primary objective is to demonstrate that blockchain can provide a practical trust layer for physical product authentication without forcing consumers to interact directly with Web3 infrastructure.
+* Single product registration with on-chain anchoring
+* Industrial batch rollups via Merkle tree cryptography (up to 10,000 units per transaction)
+* Real-time decentralized indexing via The Graph Protocol
+* Physical tamper-evident seal tracking and breach telemetry
+* QR Code Studio for generating print-ready verification seals
+* Web3 wallet authentication + Privy passwordless email OTP
+* Public verification ledger with search, filtering, and pagination
+* Full mobile responsiveness across all pages
 
 The architecture is intentionally designed so the prototype can evolve into a production system.
+
+---
+
+## 🤖 AI Usage & Development Process
+
+In compliance with hackathon transparency guidelines, AI tooling was utilized as an intelligent pair programmer to accelerate development while preserving original human architecture, cryptographic specifications, and system design:
+
+### 🧠 Solo Developer Architecture & Engineering (Solo Creator)
+- **Smart Contract Development & Deployment:** Authored, tested, and deployed the core Solidity smart contracts (`TearRubr.sol`) to the Ethereum Sepolia network (`0xa34C7D37BB2bf41f73e562075878E86eFc7Ed05B`), establishing on-chain product registration, state transitions, batch Merkle root commitments, and event indexing triggers.
+- **Protocol & Cryptographic Design:** Conceived the physical tamper-evident seal workflow, the dual-hash verification model, and industrial Merkle tree batch rollup specifications.
+- **Backend & Data Infrastructure:** Designed the SQLite + Drizzle data model, API routes, and The Graph Protocol subgraph schema and mappings.
+- **Product Direction & UX Workflows:** Authored the verification journey, manufacturer batch onboarding flows, and breach telemetry alert mechanisms.
+
+### 🛠️ AI-Assisted Implementation (Antigravity / LLM Tooling)
+- **UI/UX Engineering & Styling:** Accelerated Tailwind CSS styling, responsive layout tuning, micro-animations, and Svelte 5 runes component refactoring.
+- **Type Safety & Auditing:** Automated `svelte-check` type audits, eliminating hardcoded fallback data, and verifying edge-case handling across API endpoints.
+- **Asset Generation:** Generated the 16:9 photorealistic 3D submission banner and optimized SVG branding assets.
 
 ---
 

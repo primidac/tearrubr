@@ -39,7 +39,7 @@
 				href="/verify"
 				class="hover:text-white transition-colors {currentPath === '/verify' ? 'text-white' : ''}"
 			>
-				Public Ledger
+				Verify
 			</a>
 			<a
 				href="/register"
@@ -48,25 +48,25 @@
 				Register
 			</a>
 			<a href="/#how-it-works" class="hover:text-white transition-colors">How It Works</a>
-			<a href="/#why-blockchain" class="hover:text-white transition-colors">Why Blockchain</a>
+			<a href="/#why-blockchain" class="hover:text-white transition-colors">Security</a>
 		</div>
 
 		<!-- Right Action & Identity Dock -->
 		<div class="flex items-center gap-1.5 sm:gap-2.5">
-			<!-- Real Wallet Connection Pill -->
+			<!-- Wallet / Auth Connection Pill -->
 			{#if auth.session.isConnected}
 				<button
 					onclick={openAuth}
-					class="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-[11px] sm:text-xs font-mono-tight text-white transition-all whitespace-nowrap shrink-0"
-					title="Connected: {auth.session.walletAddress}"
+					class="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-[11px] sm:text-xs font-mono-tight text-white transition-all whitespace-nowrap shrink-0"
+					title="Connected: {auth.session.walletAddress || auth.session.email}"
 				>
 					<span class="w-1.5 h-1.5 rounded-full {auth.session.isVerifiedManufacturer ? 'bg-emerald-400' : 'bg-indigo-400'} shrink-0"></span>
 					<!-- Compact on mobile, standard on sm+ -->
 					<span class="sm:hidden font-medium whitespace-nowrap">
-						{formatAddress(auth.session.walletAddress, true)}
+						{auth.session.ensName || formatAddress(auth.session.walletAddress, true) || auth.session.email}
 					</span>
 					<span class="hidden sm:inline font-medium whitespace-nowrap">
-						{auth.session.ensName || formatAddress(auth.session.walletAddress, false)}
+						{auth.session.ensName || formatAddress(auth.session.walletAddress, false) || auth.session.email}
 					</span>
 					{#if auth.session.isVerifiedManufacturer}
 						<Check size={11} class="text-emerald-400 shrink-0" />
@@ -75,18 +75,18 @@
 			{:else}
 				<button
 					onclick={openAuth}
-					class="px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-full bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-[11px] sm:text-xs font-medium text-white transition-all font-display flex items-center gap-1.5 whitespace-nowrap shrink-0"
+					class="px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-lg bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-[11px] sm:text-xs font-medium text-white transition-all font-display flex items-center gap-1.5 whitespace-nowrap shrink-0"
 				>
 					<span class="w-1.5 h-1.5 rounded-full bg-[#8e8ea0] shrink-0"></span>
-					<span class="hidden sm:inline">Connect Wallet</span>
-					<span class="sm:hidden">Connect</span>
+					<span class="hidden sm:inline">Sign In / Connect</span>
+					<span class="sm:hidden">Sign In</span>
 				</button>
 			{/if}
 
 			<!-- Dashboard Pill Button -->
 			<a
 				href="/dashboard"
-				class="rounded-full px-3 sm:px-5 py-1 sm:py-1.5 text-[11px] sm:text-xs font-semibold bg-white text-[#08080e] hover:bg-white/90 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-sm font-display shrink-0 whitespace-nowrap"
+				class="rounded-lg px-3 sm:px-5 py-1 sm:py-1.5 text-[11px] sm:text-xs font-semibold bg-white text-[#08080e] hover:bg-white/90 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-sm font-display shrink-0 whitespace-nowrap"
 			>
 				Dashboard
 			</a>
@@ -94,7 +94,7 @@
 			<!-- Mobile menu toggle -->
 			<button
 				onclick={() => (isMobileMenuOpen = !isMobileMenuOpen)}
-				class="md:hidden p-1.5 rounded-full bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-white transition-colors shrink-0"
+				class="md:hidden p-1.5 rounded-lg bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-white transition-colors shrink-0"
 				aria-label="Toggle navigation"
 			>
 				{#if isMobileMenuOpen}
@@ -140,21 +140,21 @@
 					onclick={() => (isMobileMenuOpen = false)}
 					class="block py-2.5 text-[#9494a8] hover:text-white font-display text-xs"
 				>
-					Public Ledger
+					Product Directory
 				</a>
 				<a
 					href="/register"
 					onclick={() => (isMobileMenuOpen = false)}
 					class="block py-2.5 text-[#9494a8] hover:text-white font-display text-xs"
 				>
-					Register Product / Batch
+					Register Products
 				</a>
 				<a
 					href="/dashboard"
 					onclick={() => (isMobileMenuOpen = false)}
 					class="block py-2.5 text-[#9494a8] hover:text-white font-display text-xs flex items-center justify-between"
 				>
-					<span>Manufacturer Dashboard</span>
+					<span>Dashboard</span>
 					<LayoutDashboard size={13} class="text-white/40" />
 				</a>
 				<a
@@ -169,7 +169,7 @@
 					onclick={() => (isMobileMenuOpen = false)}
 					class="block py-2.5 text-[#9494a8] hover:text-white font-display text-xs"
 				>
-					Why Blockchain
+					Security
 				</a>
 			</div>
 
@@ -179,10 +179,10 @@
 						isMobileMenuOpen = false;
 						openAuth();
 					}}
-					class="w-full py-2.5 rounded-xl bg-white text-[#08080e] font-bold font-display text-xs transition-all shadow flex items-center justify-center gap-2 mt-2"
+					class="w-full py-2.5 rounded-lg bg-white text-[#08080e] font-bold font-display text-xs transition-all shadow flex items-center justify-center gap-2 mt-2"
 				>
 					<Wallet size={14} />
-					<span>Connect Web3 Wallet</span>
+					<span>Sign In / Connect</span>
 				</button>
 			{/if}
 		</div>

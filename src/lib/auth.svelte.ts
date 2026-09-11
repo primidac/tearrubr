@@ -116,7 +116,7 @@ class AuthState {
 				this.subgraphStatus = {
 					isConfigured: true,
 					health: data.meta.isSynced ? 'synced' : 'indexing',
-					syncedBlock: data.meta.blockNumber || this.chainStatus.blockNumber || 11683800,
+					syncedBlock: data.meta.blockNumber || this.chainStatus.blockNumber || 0,
 					queryLatencyMs: latency,
 					subgraphName: 'tearrubr-sepolia',
 					indexingUptime: '99.99%'
@@ -125,7 +125,7 @@ class AuthState {
 				this.subgraphStatus = {
 					isConfigured: true,
 					health: 'indexing',
-					syncedBlock: this.chainStatus.blockNumber || 11683800,
+					syncedBlock: this.chainStatus.blockNumber || 0,
 					queryLatencyMs: latency,
 					subgraphName: 'tearrubr-sepolia',
 					indexingUptime: '100%'
@@ -134,7 +134,7 @@ class AuthState {
 				this.subgraphStatus = {
 					isConfigured: false,
 					health: 'pending',
-					syncedBlock: this.chainStatus.blockNumber || 11683800,
+					syncedBlock: this.chainStatus.blockNumber || 0,
 					queryLatencyMs: latency,
 					subgraphName: 'tearrubr-sepolia',
 					indexingUptime: 'Standby'

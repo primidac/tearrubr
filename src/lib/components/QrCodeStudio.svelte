@@ -190,7 +190,7 @@
 				<span class="p-1.5 rounded-lg bg-indigo-500/20 text-indigo-400">
 					<QrCode size={18} />
 				</span>
-				<h2 class="text-lg font-bold text-white font-display">Cryptographic Tamper-Seal Studio</h2>
+				<h2 class="text-lg font-bold text-white font-display">Physical QR Seal Studio</h2>
 			</div>
 			<p class="text-xs text-[#8e8ea0] max-w-xl">
 				Generate high-density, damage-tolerant QR stickers for physical packaging seams. Level H error correction ensures verification decodability even after partial tear.
@@ -201,7 +201,7 @@
 		<div class="flex items-center gap-2 self-start sm:self-center shrink-0">
 			<button
 				onclick={copyTargetLink}
-				class="px-3.5 py-1.5 rounded-full bg-white/[0.06] hover:bg-white/[0.12] text-xs font-display text-white transition-colors flex items-center gap-1.5"
+				class="px-3.5 py-1.5 rounded-lg bg-white/[0.06] hover:bg-white/[0.12] text-xs font-display text-white transition-colors flex items-center gap-1.5"
 			>
 				{#if copiedLink}
 					<Check size={13} class="text-emerald-400" />
@@ -214,7 +214,7 @@
 
 			<button
 				onclick={printSticker}
-				class="px-3.5 py-1.5 rounded-full bg-white text-[#08080e] hover:bg-white/90 font-bold text-xs font-display transition-all shadow flex items-center gap-1.5"
+				class="px-3.5 py-1.5 rounded-lg bg-white text-[#08080e] hover:bg-white/90 font-bold text-xs font-display transition-all shadow flex items-center gap-1.5"
 			>
 				<Printer size={13} />
 				<span>Print Label</span>
@@ -235,7 +235,7 @@
 				<div class="flex items-center justify-between border-b border-white/[0.06] pb-3">
 					<div class="text-xs font-bold text-white font-display flex items-center gap-2">
 						<Settings2 size={14} class="text-indigo-400" />
-						<span>1. Select Identity Source</span>
+						<span>1. Select Product</span>
 					</div>
 
 					<!-- Mode Toggle Tabs -->
@@ -244,7 +244,7 @@
 							onclick={() => (mode = 'existing')}
 							class="px-2.5 py-1 rounded-md transition-colors {mode === 'existing' ? 'bg-white text-[#08080e] font-bold shadow' : 'text-[#8e8ea0] hover:text-white'}"
 						>
-							Registered Item ({products.length})
+							Products ({products.length})
 						</button>
 						<button
 							onclick={() => (mode = 'custom')}
@@ -337,7 +337,7 @@
 				<div class="flex items-center justify-between border-b border-white/[0.06] pb-3">
 					<div class="text-xs font-bold text-white font-display flex items-center gap-2">
 						<Palette size={14} class="text-cyan-400" />
-						<span>2. Physical Label Aesthetics & Security</span>
+						<span>2. Seal Label Style & Options</span>
 					</div>
 				</div>
 
@@ -380,12 +380,12 @@
 
 					<label class="flex items-center gap-2 cursor-pointer text-[#8e8ea0] hover:text-white">
 						<input type="checkbox" bind:checked={showChainBadge} class="rounded border-white/20 bg-white/5 text-accent focus:ring-0" />
-						<span>Include Sepolia Chain Seal</span>
+						<span>Include On-Chain Verification Seal</span>
 					</label>
 
 					<label class="flex items-center gap-2 cursor-pointer text-[#8e8ea0] hover:text-white">
 						<input type="checkbox" bind:checked={showBatchLot} class="rounded border-white/20 bg-white/5 text-accent focus:ring-0" />
-						<span>Print LOT / Batch Hash</span>
+						<span>Print LOT / Batch Number</span>
 					</label>
 
 					<div class="flex items-center justify-between text-[11px] font-mono-tight text-[#8e8ea0]">
@@ -447,11 +447,11 @@
 				<div class="border-b-2 border-dashed {theme === 'print' ? 'border-black/40' : 'border-white/20'} pb-3 mb-4 flex items-center justify-between text-[10px] font-mono-tight uppercase">
 					<div class="flex items-center gap-1.5 font-bold">
 						<Logo size={18} />
-						<span>TearRubr Vault Seal</span>
+						<span>TearRubr Authenticity Seal</span>
 					</div>
 					{#if showChainBadge}
 						<span class="px-1.5 py-0.5 rounded {theme === 'print' ? 'bg-black text-white' : 'bg-emerald-500/20 text-emerald-400'} text-[9px] font-bold">
-							SEPOLIA VERIFIED
+							VERIFIED ON-CHAIN
 						</span>
 					{/if}
 				</div>
@@ -507,7 +507,7 @@
 
 					<!-- Scan Prompt -->
 					<div class="text-center text-[10px] font-mono-tight {theme === 'print' ? 'text-black/60' : 'text-[#7a7a8e]'}">
-						Scan to verify cryptographic proof on Ethereum
+						Scan with any smartphone camera to verify authenticity
 					</div>
 				</div>
 

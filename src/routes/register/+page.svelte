@@ -133,10 +133,10 @@
 </script>
 
 <svelte:head>
-	<title>Manufacturer Portal | TearRubr</title>
+	<title>Product Certification — TearRubr</title>
 	<meta
 		name="description"
-		content="Register single products or high-volume industrial batches on Ethereum Sepolia with cryptographic Merkle proof rollups."
+		content="Register single products or high-volume industrial batches with tamper-evident digital certificates."
 	/>
 </svelte:head>
 
@@ -155,17 +155,17 @@
 		<!-- Header -->
 		<div class="text-center mb-8 sm:mb-10">
 			<span class="text-xs font-mono-tight text-accent font-semibold tracking-wider uppercase">
-				Manufacturer Portal · Sepolia
+				Manufacturer Portal
 			</span>
 			<h1 class="text-2xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-white font-display mt-2">
-				Register on the Public Ledger
+				Register & Certify Products
 			</h1>
 			<p class="text-xs sm:text-sm text-[#9494a8] mt-2 max-w-lg mx-auto leading-relaxed">
-				Issue tamper-evident cryptographic identities for single items or industrial batches of up to 10,000 units in a single transaction.
+				Issue tamper-evident identities for individual products or entire production runs in one click.
 			</p>
 		</div>
 
-		<!-- Identity & Anti-Spoofing Banner -->
+		<!-- Identity & Brand Banner -->
 		<div class="mb-6 sm:mb-8 p-3.5 sm:p-4 rounded-2xl bg-white/[0.03] border border-white/[0.08] backdrop-blur-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
 			<div class="flex items-center gap-3 min-w-0">
 				<div class="w-9 h-9 rounded-xl {currentBrandCheck.isAuthorized ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40' : 'bg-white/10 text-[#8e8ea0] border border-white/10'} flex items-center justify-center font-bold text-sm shrink-0">
@@ -178,7 +178,7 @@
 				<div class="min-w-0">
 					<div class="flex items-center gap-2 flex-wrap">
 						<span class="text-xs font-bold text-white font-mono-tight truncate">
-							{truncate(auth.session.ensName || auth.session.walletAddress || 'Wallet Disconnected', 10, 6)}
+							{truncate(auth.session.ensName || auth.session.walletAddress || 'Account Disconnected', 10, 6)}
 						</span>
 						<span class="px-2 py-0.5 rounded-full {currentBrandCheck.isAuthorized ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-white/10 text-[#8e8ea0]'} text-[10px] font-mono-tight whitespace-nowrap shrink-0">
 							{currentBrandCheck.badge}
@@ -192,34 +192,34 @@
 
 			<button
 				onclick={() => auth.openModal()}
-				class="px-3.5 py-1.5 rounded-full bg-white/10 hover:bg-white/15 text-xs text-white transition-colors font-display self-start sm:self-auto shrink-0 whitespace-nowrap"
+				class="px-3.5 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 text-xs text-white transition-colors font-display self-start sm:self-auto shrink-0 whitespace-nowrap"
 			>
-				{auth.session.isConnected ? 'Manage Wallet ↗' : 'Connect Wallet'}
+				{auth.session.isConnected ? 'Manage Account ↗' : 'Sign In / Connect'}
 			</button>
 		</div>
 
 		<!-- Tab Switcher (Mobile Optimized Grid) -->
 		<div class="flex justify-center mb-6 sm:mb-8 w-full">
-			<div class="p-1 rounded-2xl sm:rounded-full bg-[#0c0c16] border border-white/[0.08] grid grid-cols-2 sm:flex items-center gap-1 text-xs w-full max-w-md sm:w-auto">
+			<div class="p-1 rounded-xl bg-[#0c0c16] border border-white/[0.08] grid grid-cols-2 sm:flex items-center gap-1 text-xs w-full max-w-md sm:w-auto">
 				<button
 					onclick={() => {
 						activeTab = 'batch';
 						error = null;
 					}}
-					class="px-3 sm:px-5 py-2 rounded-xl sm:rounded-full font-medium transition-all font-display text-center whitespace-nowrap {activeTab === 'batch' ? 'bg-white text-[#08080e] shadow-md font-bold' : 'text-[#8e8ea0] hover:text-white'}"
+					class="px-3 sm:px-5 py-2 rounded-lg font-medium transition-all font-display text-center whitespace-nowrap {activeTab === 'batch' ? 'bg-white text-[#08080e] shadow-md font-bold' : 'text-[#8e8ea0] hover:text-white'}"
 				>
-					<span class="hidden sm:inline">Industrial Batch Rollup (Recommended)</span>
-					<span class="sm:hidden">Batch Rollup</span>
+					<span class="hidden sm:inline">Bulk Batch (Recommended)</span>
+					<span class="sm:hidden">Bulk Batch</span>
 				</button>
 				<button
 					onclick={() => {
 						activeTab = 'single';
 						error = null;
 					}}
-					class="px-3 sm:px-5 py-2 rounded-xl sm:rounded-full font-medium transition-all font-display text-center whitespace-nowrap {activeTab === 'single' ? 'bg-white text-[#08080e] shadow-md font-bold' : 'text-[#8e8ea0] hover:text-white'}"
+					class="px-3 sm:px-5 py-2 rounded-lg font-medium transition-all font-display text-center whitespace-nowrap {activeTab === 'single' ? 'bg-white text-[#08080e] shadow-md font-bold' : 'text-[#8e8ea0] hover:text-white'}"
 				>
-					<span class="hidden sm:inline">Single Item Registration</span>
-					<span class="sm:hidden">Single Item</span>
+					<span class="hidden sm:inline">Single Product</span>
+					<span class="sm:hidden">Single Product</span>
 				</button>
 			</div>
 		</div>
@@ -313,23 +313,23 @@
 						></textarea>
 					</div>
 
-					<!-- Merkle Tree Architecture Note -->
+					<!-- Instant Batch Certification Note -->
 					<div class="p-3.5 sm:p-4 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-xs text-indigo-300 space-y-1">
 						<div class="font-bold flex items-center gap-1.5 font-display">
 							<Boxes size={14} class="shrink-0" />
-							<span>Zero-Bloat Merkle Rollup Technology</span>
+							<span>Instant Batch Certification</span>
 						</div>
 						<p class="text-[11px] text-[#a0a0c0] leading-relaxed">
-							All {batchQuantity} individual product hashes are aggregated into a single 32-byte cryptographic root committed to Ethereum Sepolia. Gas fees are paid once regardless of quantity.
+							All {batchQuantity} units are certified and anchored on-chain in 1 single transaction.
 						</p>
 					</div>
 
 					<button
 						type="submit"
 						disabled={isSubmitting}
-						class="w-full py-3 sm:py-3.5 rounded-full bg-white text-[#08080e] hover:bg-white/90 font-bold text-xs sm:text-sm font-display transition-all shadow-xl hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 whitespace-nowrap"
+						class="w-full py-3 sm:py-3.5 rounded-xl bg-white text-[#08080e] hover:bg-white/90 font-bold text-xs sm:text-sm font-display transition-all shadow-xl hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 whitespace-nowrap"
 					>
-						{isSubmitting ? 'Computing Merkle Tree & Broadcasting...' : 'Commit Batch to Ethereum Sepolia (1 Tx)'}
+						{isSubmitting ? 'Certifying & Generating Codes...' : 'Certify & Generate Codes'}
 					</button>
 				</form>
 			{:else}
@@ -379,9 +379,9 @@
 					<button
 						type="submit"
 						disabled={isSubmitting}
-						class="w-full py-3 sm:py-3.5 rounded-full bg-white text-[#08080e] hover:bg-white/90 font-bold text-xs sm:text-sm font-display transition-all shadow-xl hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 whitespace-nowrap"
+						class="w-full py-3 sm:py-3.5 rounded-xl bg-white text-[#08080e] hover:bg-white/90 font-bold text-xs sm:text-sm font-display transition-all shadow-xl hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 whitespace-nowrap"
 					>
-						{isSubmitting ? 'Signing Transaction on Ethereum...' : 'Register Single Product on Sepolia'}
+						{isSubmitting ? 'Certifying Product...' : 'Certify Single Product'}
 					</button>
 				</form>
 			{/if}
@@ -396,10 +396,10 @@
 					</div>
 					<div>
 						<h3 class="text-base font-bold text-white font-display">
-							Batch Successfully Committed to Ethereum Sepolia!
+							Batch Successfully Certified!
 						</h3>
 						<p class="text-xs text-[#8e8ea0]">
-							{batchResult.quantity} individual units rolled up under LOT {batchResult.batchNumber}
+							{batchResult.quantity} individual units registered under LOT {batchResult.batchNumber}
 						</p>
 					</div>
 				</div>
@@ -427,14 +427,14 @@
 				<div class="flex flex-col sm:flex-row gap-3 pt-2">
 					<button
 						onclick={downloadManifest}
-						class="px-5 py-2.5 sm:py-3 rounded-full bg-emerald-500 hover:bg-emerald-400 text-[#08080e] font-bold text-xs font-display transition-all shadow-lg flex items-center justify-center gap-2 whitespace-nowrap"
+						class="px-5 py-2.5 sm:py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-[#08080e] font-bold text-xs font-display transition-all shadow-lg flex items-center justify-center gap-2 whitespace-nowrap"
 					>
 						<Download size={14} class="shrink-0" />
 						<span>Download Factory Print Manifest (CSV)</span>
 					</button>
 					<a
 						href="/verify"
-						class="px-5 py-2.5 sm:py-3 rounded-full bg-white/10 hover:bg-white/15 text-white font-medium text-xs font-display transition-all flex items-center justify-center gap-1 whitespace-nowrap"
+						class="px-5 py-2.5 sm:py-3 rounded-xl bg-white/10 hover:bg-white/15 text-white font-medium text-xs font-display transition-all flex items-center justify-center gap-1 whitespace-nowrap"
 					>
 						<span>View on Public Ledger</span>
 						<ArrowRight size={13} class="shrink-0" />

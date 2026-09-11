@@ -80,7 +80,7 @@
 
 				<button
 					onclick={() => auth.closeModal()}
-					class="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-[#8e8ea0] hover:text-white transition-colors"
+					class="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-[#8e8ea0] hover:text-white transition-colors"
 					aria-label="Close"
 				>
 					✕
@@ -130,7 +130,7 @@
 
 					<button
 						onclick={() => auth.disconnect()}
-						class="w-full mt-3 py-2 rounded-xl bg-danger/10 hover:bg-danger/20 text-red-300 font-semibold text-xs transition-colors"
+						class="w-full mt-3 py-2 rounded-lg bg-danger/10 hover:bg-danger/20 text-red-300 font-semibold text-xs transition-colors"
 					>
 						Disconnect
 					</button>
@@ -164,7 +164,7 @@
 						<button
 							onclick={handleConnect}
 							disabled={auth.isConnecting}
-							class="w-full py-3.5 rounded-2xl bg-white text-[#08080e] hover:bg-white/90 font-bold text-xs sm:text-sm font-display transition-all shadow-xl hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-3 disabled:opacity-50"
+							class="w-full py-3.5 rounded-xl bg-white text-[#08080e] hover:bg-white/90 font-bold text-xs sm:text-sm font-display transition-all shadow-xl hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-3 disabled:opacity-50"
 						>
 							<svg class="w-5 h-5" viewBox="0 0 318.6 318.6" xmlns="http://www.w3.org/2000/svg">
 								<polygon points="274.1 35.5 174.6 109.4 193 65.8 274.1 35.5" fill="#e2761b" stroke="#e2761b" stroke-linecap="round" stroke-linejoin="round" />
@@ -200,7 +200,7 @@
 								<button
 									type="submit"
 									disabled={auth.isConnecting}
-									class="w-full py-3 rounded-2xl bg-indigo-500 hover:bg-indigo-400 text-white font-bold text-xs font-display transition-all shadow-md disabled:opacity-50"
+									class="w-full py-3 rounded-xl bg-indigo-500 hover:bg-indigo-400 text-white font-bold text-xs font-display transition-all shadow-md disabled:opacity-50"
 								>
 									{auth.isConnecting ? 'Sending code from Privy...' : 'Send Login Code via Privy →'}
 								</button>
@@ -232,14 +232,14 @@
 									<button
 										type="button"
 										onclick={() => (emailStep = 'input')}
-										class="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-xs text-[#8e8ea0] transition-colors"
+										class="px-4 py-2.5 rounded-lg bg-white/5 hover:bg-white/10 text-xs text-[#8e8ea0] transition-colors"
 									>
 										Back
 									</button>
 									<button
 										type="submit"
 										disabled={auth.isConnecting}
-										class="flex-1 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-[#08080e] font-bold text-xs font-display transition-all shadow-md disabled:opacity-50"
+										class="flex-1 py-2.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-[#08080e] font-bold text-xs font-display transition-all shadow-md disabled:opacity-50"
 									>
 										{auth.isConnecting ? 'Verifying with Privy...' : 'Confirm Code & Authenticate'}
 									</button>
@@ -272,7 +272,7 @@
 							<button
 								type="submit"
 								disabled={auth.isConnecting}
-								class="w-full py-3 rounded-2xl bg-white text-[#08080e] hover:bg-white/90 font-bold text-xs font-display transition-all disabled:opacity-50 shadow-md"
+								class="w-full py-3 rounded-xl bg-white text-[#08080e] hover:bg-white/90 font-bold text-xs font-display transition-all disabled:opacity-50 shadow-md"
 							>
 								{auth.isConnecting ? 'Resolving on Sepolia...' : 'Resolve On-Chain Authority'}
 							</button>

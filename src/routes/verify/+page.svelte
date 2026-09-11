@@ -1,61 +1,144 @@
 <script lang="ts">
 	import { fade } from 'svelte/transition';
 	import Navbar from '$lib/components/Navbar.svelte';
-	import { auth } from '$lib/auth.svelte';
 	import {
 		Search,
-		Layers,
-		ExternalLink,
 		Copy,
 		Check,
 		ArrowRight,
 		ChevronLeft,
 		ChevronRight,
-		Lock,
-		Unlock,
-		Boxes,
 		ShieldCheck,
-		Sparkles
+		ShieldAlert,
+		AlertTriangle,
+		Lock
 	} from '@lucide/svelte';
 
 	let { data } = $props();
 
+	// Local mutable list of products so client can reactively update when an item is unsealed
+	let productsList = $state<typeof data.products>([]);
+	$effect(() => {
+		productsList = data.products || [];
+	});
 	let searchQuery = $state('');
-	let filterType = $state<'all' | 'onchain' | 'batches' | 'single'>('all');
+	let isVerifying = $state(false);
+	let hasAutoVerified = $state(false);
+	let searchInputRef: HTMLInputElement | null = $state(null);
+
+	interface VerificationResult {
+		status: 'first_time_verified' | 'previously_opened' | 'not_found';
+		openedAt: Date | string | number | null;
+		product: any;
+		queryId: string;
+	}
+
+	let verificationResult = $state<VerificationResult | null>(null);
+
+	let filterType = $state<'all' | 'sealed' | 'opened' | 'batches'>('all');
 	let copiedId = $state<string | null>(null);
 
 	// Pagination state
 	let currentPage = $state(1);
 	let pageSize = $state(10);
 
+	// Initial query check (e.g. from QR code scan landing on /verify?id=...)
 	$effect(() => {
-		if (data.initialQuery) {
+		if (data.initialQuery && !hasAutoVerified) {
+			hasAutoVerified = true;
 			searchQuery = data.initialQuery;
+			handleVerify(data.initialQuery);
 		}
 	});
 
-	let batchCount = $derived(data.products.filter((p) => Boolean(p.batchNumber)).length);
-	let singleCount = $derived(data.products.filter((p) => !p.batchNumber).length);
-	let onChainCount = $derived(data.products.filter((p) => Boolean(p.blockchainTxHash)).length);
+	async function handleVerify(idToVerify?: string) {
+		const targetId = (idToVerify !== undefined ? idToVerify : searchQuery).trim();
+		if (!targetId) return;
+
+		isVerifying = true;
+		verificationResult = null;
+
+		try {
+			const res = await fetch('/api/products/verify', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ id: targetId })
+			});
+			const result = await res.json();
+
+			if (res.ok && result.success) {
+				verificationResult = {
+					status: result.status,
+					openedAt: result.openedAt,
+					product: result.product,
+					queryId: targetId
+				};
+
+				// Update productsList in memory so UI immediately reflects unsealed status
+				productsList = productsList.map((p) => {
+					const matchesId = p.id === result.product.id;
+					const matchesBatch =
+						p.batchId &&
+						result.product.batchId === p.batchId &&
+						p.serialIndex === result.product.serialIndex;
+
+					if (matchesId || matchesBatch) {
+						return {
+							...p,
+							id: result.product.id,
+							sealStatus: 'opened',
+							openedAt: result.openedAt,
+							isIdConcealed: false
+						};
+					}
+					return p;
+				});
+			} else {
+				verificationResult = {
+					status: 'not_found',
+					openedAt: null,
+					product: null,
+					queryId: targetId
+				};
+			}
+		} catch (err) {
+			console.error('Failed to verify ID:', err);
+			verificationResult = {
+				status: 'not_found',
+				openedAt: null,
+				product: null,
+				queryId: targetId
+			};
+		} finally {
+			isVerifying = false;
+		}
+	}
+
+	function clearSearch() {
+		searchQuery = '';
+		verificationResult = null;
+		if (searchInputRef) {
+			searchInputRef.focus();
+		}
+	}
+
+	function focusSearchInput() {
+		if (searchInputRef) {
+			searchInputRef.focus();
+			searchInputRef.scrollIntoView({ behavior: 'smooth', block: 'center' });
+		}
+	}
+
+	let batchCount = $derived(productsList.filter((p) => Boolean(p.batchNumber)).length);
+	let sealedCount = $derived(productsList.filter((p) => p.sealStatus !== 'opened').length);
+	let openedCount = $derived(productsList.filter((p) => p.sealStatus === 'opened').length);
 
 	let filteredProducts = $derived(
-		data.products.filter((p) => {
-			// Filter type
-			if (filterType === 'onchain' && !p.blockchainTxHash) return false;
+		productsList.filter((p) => {
+			if (filterType === 'sealed' && p.sealStatus === 'opened') return false;
+			if (filterType === 'opened' && p.sealStatus !== 'opened') return false;
 			if (filterType === 'batches' && !p.batchNumber) return false;
-			if (filterType === 'single' && p.batchNumber) return false;
-
-			// Search filter
-			if (!searchQuery.trim()) return true;
-			const q = searchQuery.toLowerCase().trim();
-			return (
-				p.name.toLowerCase().includes(q) ||
-				p.manufacturer.toLowerCase().includes(q) ||
-				p.id.toLowerCase().includes(q) ||
-				(p.batchNumber && p.batchNumber.toLowerCase().includes(q)) ||
-				(p.blockchainTxHash && p.blockchainTxHash.toLowerCase().includes(q)) ||
-				(p.description && p.description.toLowerCase().includes(q))
-			);
+			return true;
 		})
 	);
 
@@ -63,8 +146,6 @@
 	let totalPages = $derived(Math.max(1, Math.ceil(filteredProducts.length / pageSize)));
 
 	$effect(() => {
-		// Reset to page 1 whenever filters or query change
-		searchQuery;
 		filterType;
 		pageSize;
 		currentPage = 1;
@@ -109,8 +190,9 @@
 		}
 	}
 
-	function formatDate(timestamp: Date | number) {
-		const date = timestamp instanceof Date ? timestamp : new Date(Number(timestamp) * 1000);
+	function formatDate(timestamp: Date | number | string | null | undefined) {
+		if (!timestamp) return 'Just now';
+		const date = timestamp instanceof Date ? timestamp : new Date(typeof timestamp === 'number' ? timestamp * 1000 : timestamp);
 		return date.toLocaleDateString('en-US', {
 			month: 'short',
 			day: 'numeric',
@@ -120,7 +202,7 @@
 		});
 	}
 
-	function truncate(str: string, lead = 6, trail = 4) {
+	function truncate(str: string | null | undefined, lead = 6, trail = 4) {
 		if (!str) return '';
 		if (str.length <= lead + trail) return str;
 		return `${str.slice(0, lead)}…${str.slice(-trail)}`;
@@ -136,346 +218,432 @@
 </script>
 
 <svelte:head>
-	<title>Public Ledger | TearRubr</title>
+	<title>Product Directory & Verification — TearRubr</title>
 	<meta
 		name="description"
-		content="Explore cryptographically verified product and batch records indexed on Ethereum Sepolia."
+		content="Verify authentic products with unique security IDs and inspect tamper-evident physical packaging seals."
 	/>
 </svelte:head>
 
-<div class="min-h-screen bg-[#08080e] text-text-primary selection:bg-indigo-500/20 pb-24 sm:pb-28">
+<div class="min-h-screen bg-[#08080e] text-text-primary selection:bg-indigo-500/20 pb-24 sm:pb-28 font-sans">
 	<!-- Floating Pill Dock Navigation -->
 	<Navbar currentPath="/verify" />
 
-	<!-- Atmospheric Blooms -->
-	<div class="fixed inset-0 pointer-events-none overflow-hidden select-none z-0">
-		<div class="absolute top-10 right-10 w-[350px] sm:w-[500px] h-[350px] sm:h-[500px] rounded-full bg-[#6366f1]/12 blur-[120px] sm:blur-[140px]"></div>
-		<div class="absolute bottom-20 left-10 w-[350px] sm:w-[500px] h-[350px] sm:h-[500px] rounded-full bg-[#10b981]/12 blur-[120px] sm:blur-[140px]"></div>
-	</div>
-
 	<!-- Main Container -->
-	<main class="max-w-6xl mx-auto px-3.5 sm:px-6 pt-24 sm:pt-36 relative z-10">
-		<!-- Header & The Graph Status Bar -->
-		<div class="flex flex-col md:flex-row md:items-end justify-between gap-5 sm:gap-6 pb-6 sm:pb-8 border-b border-white/[0.08]">
+	<main class="max-w-5xl mx-auto px-4 sm:px-6 pt-24 sm:pt-32 relative z-10 space-y-8">
+		
+		<!-- Page Header -->
+		<div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-6 border-b border-white/[0.08]">
 			<div>
-				<div class="flex items-center gap-2 mb-1.5">
-					<span class="text-xs font-mono-tight uppercase tracking-wider text-accent font-semibold">
-						Decentralized Explorer
-					</span>
-					<span class="text-white/20">/</span>
-					<span class="text-xs font-mono-tight text-emerald-400">Ethereum Sepolia</span>
-				</div>
-				<h1 class="text-2xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-white font-display">
-					Public Ledger
+				<h1 class="text-2xl sm:text-4xl font-extrabold tracking-tight text-white font-display">
+					Product Directory
 				</h1>
-				<p class="text-xs sm:text-sm text-[#9494a8] mt-1.5 max-w-xl leading-relaxed">
-					Browse authentic product identities, batch Merkle rollups, and physical tamper-evident seal records registered on-chain.
+				<p class="text-xs sm:text-sm text-[#8e8ea0] mt-1 max-w-xl leading-relaxed">
+					Verify product authenticity with your unique physical security ID. Unused product IDs remain concealed until unsealed.
 				</p>
 			</div>
 
-			<!-- The Graph Subgraph Real-Time Status Card -->
-			<div class="p-3.5 rounded-2xl bg-white/[0.03] border border-white/[0.08] backdrop-blur-xl shrink-0 w-full md:w-auto md:min-w-[320px]">
-				<div class="flex items-center justify-between gap-3 text-xs mb-2">
-					<div class="flex items-center gap-2">
-						<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0"></span>
-						<span class="font-bold text-white font-mono-tight whitespace-nowrap">The Graph Protocol</span>
-					</div>
-					<div class="flex items-center gap-1.5 shrink-0">
-						<span class="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 text-[10px] font-mono-tight whitespace-nowrap">
-							{auth.subgraph.health.toUpperCase()}
-						</span>
-						<a
-							href="https://thegraph.com/studio/subgraph/tearrubr-sepolia/"
-							target="_blank"
-							rel="noopener noreferrer"
-							class="px-2 py-0.5 rounded bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 hover:text-white text-[10px] font-mono-tight transition-colors inline-flex items-center gap-1 whitespace-nowrap"
-							title="Open live subgraph in The Graph Studio"
-						>
-							<span>Studio</span>
-							<ExternalLink size={10} />
-						</a>
-					</div>
-				</div>
-
-				<div class="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px] text-[#8e8ea0] font-mono-tight border-b border-white/[0.06] pb-2 mb-2">
-					<div class="truncate">Block: <span class="text-white font-semibold">#{auth.subgraph.syncedBlock ? auth.subgraph.syncedBlock.toLocaleString() : '11,684,249'}</span></div>
-					<div class="truncate">Latency: <span class="text-emerald-400 font-semibold">{auth.subgraph.queryLatencyMs || 18}ms</span></div>
-					<div class="truncate">Subgraph: <span class="text-white">tearrubr</span></div>
-					<div class="truncate">Network: <span class="text-white">Sepolia</span></div>
-				</div>
-
-				<div class="flex items-center justify-between gap-2 text-[10px] text-[#8e8ea0] font-mono-tight">
-					<span class="text-emerald-400/80 whitespace-nowrap">● IPFS: QmRmD8R…9iqBd</span>
-					<a
-						href="/api/blockchain/subgraph"
-						target="_blank"
-						class="text-accent hover:underline inline-flex items-center gap-1 whitespace-nowrap shrink-0"
-						title="Inspect live GraphQL JSON response directly"
-					>
-						<span>GraphQL API</span>
-						<ExternalLink size={9} />
-					</a>
-				</div>
+			<!-- Subtle Live Status Badge -->
+			<div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.03] border border-white/[0.08] text-xs font-mono-tight text-[#8e8ea0] shrink-0 self-start sm:self-auto">
+				<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+				<span>Ethereum Sepolia · Live</span>
 			</div>
 		</div>
 
-		<!-- Search Bar & Filters -->
-		<div class="mt-6 sm:mt-8 space-y-3.5">
-			<!-- Clean Search Input -->
-			<div class="relative">
-				<div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-text-tertiary">
-					<Search size={15} />
+		<!-- ========================================================================= -->
+		<!-- 1. DEDICATED ID-ONLY VERIFICATION TERMINAL -->
+		<!-- ========================================================================= -->
+		<div class="p-5 sm:p-7 rounded-3xl bg-white/[0.02] border border-white/[0.08] shadow-sm space-y-5">
+			
+			<div class="flex items-center justify-between gap-2">
+				<div class="flex items-center gap-2 text-xs sm:text-sm font-display font-bold text-white">
+					<ShieldCheck size={18} class="text-emerald-400" />
+					<span>Security ID Verification Terminal</span>
 				</div>
-				<input
-					type="text"
-					bind:value={searchQuery}
-					placeholder="Search by product, lot number, or ID..."
-					class="w-full pl-10 pr-16 py-3 rounded-2xl bg-white/[0.03] border border-white/[0.08] hover:border-white/[0.15] text-white placeholder-[#606074] text-xs sm:text-sm backdrop-blur-xl focus:outline-none focus:border-accent transition-all shadow-lg"
-				/>
-				{#if searchQuery}
-					<button
-						onclick={() => (searchQuery = '')}
-						class="absolute inset-y-0 right-3 flex items-center px-2 text-xs text-text-tertiary hover:text-white"
-					>
-						Clear
-					</button>
-				{/if}
+				<span class="text-[11px] font-mono-tight text-[#7a7a8e]">One-Time Physical Proof</span>
 			</div>
 
-			<!-- Filter Pills & Page Size Controls -->
-			<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pt-0.5 text-xs">
-				<!-- Filter Pills (Scrolls horizontally on small devices with no wrapping) -->
-				<div class="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar pb-1 -mx-1 px-1 sm:overflow-visible sm:flex-wrap">
+			<!-- Search Form: ID ONLY -->
+			<form
+				onsubmit={(e) => {
+					e.preventDefault();
+					handleVerify();
+				}}
+				class="flex flex-col sm:flex-row items-stretch gap-2.5"
+			>
+				<div class="relative flex-1">
+					<div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[#7a7a8e]">
+						<Search size={16} />
+					</div>
+					<input
+						bind:this={searchInputRef}
+						type="text"
+						bind:value={searchQuery}
+						placeholder="Enter Unique Product Security ID (from physical seal or QR code)..."
+						class="w-full pl-11 pr-20 py-3.5 rounded-2xl bg-white/[0.04] border border-white/[0.1] hover:border-white/20 text-white placeholder-[#606074] text-xs sm:text-sm font-mono-tight focus:outline-none focus:border-white/40 transition-all shadow-sm"
+					/>
+					{#if searchQuery}
+						<button
+							type="button"
+							onclick={clearSearch}
+							class="absolute inset-y-0 right-3 flex items-center px-2 text-xs text-[#8e8ea0] hover:text-white transition-colors font-display"
+						>
+							Clear
+						</button>
+					{/if}
+				</div>
+
+				<button
+					type="submit"
+					disabled={isVerifying || !searchQuery.trim()}
+					class="px-6 py-3.5 rounded-2xl bg-white text-black font-bold text-xs sm:text-sm font-display hover:bg-white/90 disabled:opacity-40 transition-all flex items-center justify-center gap-2 shadow-sm shrink-0"
+				>
+					{#if isVerifying}
+						<span class="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin"></span>
+						<span>Verifying...</span>
+					{:else}
+						<ShieldCheck size={16} />
+						<span>Verify ID</span>
+					{/if}
+				</button>
+			</form>
+
+			<!-- VERIFICATION RESULTS -->
+			{#if verificationResult}
+				<div in:fade={{ duration: 150 }}>
+					{#if verificationResult.status === 'first_time_verified'}
+						<!-- Case A: First Time Verified (Seal officially broken TODAY) -->
+						<div class="p-5 sm:p-6 rounded-2xl bg-emerald-500/[0.08] border border-emerald-500/30 text-emerald-400 space-y-4">
+							<div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+								<div class="flex items-start gap-3.5">
+									<div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
+										<ShieldCheck size={22} />
+									</div>
+									<div class="space-y-1">
+										<div class="flex items-center gap-2 flex-wrap">
+											<h2 class="text-base sm:text-lg font-bold text-white font-display">
+												✓ Authentic Product — First-Time Verification!
+											</h2>
+											<span class="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-mono-tight font-bold uppercase tracking-wider">
+												Seal Broken Today
+											</span>
+										</div>
+										<p class="text-xs sm:text-sm text-[#c0c0d0] leading-relaxed max-w-2xl">
+											This product is officially certified on Ethereum Sepolia. <strong>This is the very first time this security ID has ever been checked.</strong> The physical seal has now been recorded as opened today ({formatDate(verificationResult.openedAt)}) to prevent future counterfeit refilling.
+										</p>
+									</div>
+								</div>
+
+								<a
+									href="/verify/{verificationResult.product.id}"
+									class="px-4 py-2.5 rounded-xl bg-emerald-500 text-black font-bold text-xs font-display hover:bg-emerald-400 transition-all shrink-0 flex items-center gap-1.5 self-start sm:self-center shadow-sm"
+								>
+									<span>View Full Certificate</span>
+									<ArrowRight size={14} />
+								</a>
+							</div>
+
+							<!-- Item Details Footer -->
+							<div class="pt-3 border-t border-emerald-500/20 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-[#8e8ea0]">
+								<span>Product: <strong class="text-white font-display">{verificationResult.product.name}</strong></span>
+								{#if verificationResult.product.batchNumber}
+									<span>·</span>
+									<span>LOT: <strong class="text-white font-mono-tight">{verificationResult.product.batchNumber} (#{verificationResult.product.serialIndex}/{verificationResult.product.batchQuantity})</strong></span>
+								{/if}
+								<span>·</span>
+								<span>Issuer: <strong class="text-white font-mono-tight">{truncate(verificationResult.product.manufacturer, 6, 4)}</strong></span>
+								<span>·</span>
+								<span>ID: <code class="text-emerald-300 font-mono-tight">{truncate(verificationResult.product.id, 8, 6)}</code></span>
+							</div>
+						</div>
+
+					{:else if verificationResult.status === 'previously_opened'}
+						<!-- Case B: Previously Opened / Tamper Warning -->
+						<div class="p-5 sm:p-6 rounded-2xl bg-amber-500/[0.08] border border-amber-500/30 text-amber-300 space-y-4">
+							<div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+								<div class="flex items-start gap-3.5">
+									<div class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0 mt-0.5">
+										<AlertTriangle size={22} />
+									</div>
+									<div class="space-y-1">
+										<div class="flex items-center gap-2 flex-wrap">
+											<h2 class="text-base sm:text-lg font-bold text-amber-200 font-display">
+												⚠️ Authentic Record — Previously Opened / Tampered
+											</h2>
+											<span class="px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-[10px] font-mono-tight font-bold uppercase tracking-wider">
+												Seal Already Broken
+											</span>
+										</div>
+										<p class="text-xs sm:text-sm text-[#d8d8e8] leading-relaxed max-w-2xl">
+											This product is registered in the blockchain ledger, but this unique security ID was <strong>already verified and unsealed previously on {formatDate(verificationResult.openedAt)}</strong>. If you just purchased or unsealed this item today, the packaging has probably been refilled, reused, or tampered with!
+										</p>
+									</div>
+								</div>
+
+								<a
+									href="/verify/{verificationResult.product.id}"
+									class="px-4 py-2.5 rounded-xl bg-amber-400 text-black font-bold text-xs font-display hover:bg-amber-300 transition-all shrink-0 flex items-center gap-1.5 self-start sm:self-center shadow-sm"
+								>
+									<span>View Audit Certificate</span>
+									<ArrowRight size={14} />
+								</a>
+							</div>
+
+							<!-- Item Details Footer -->
+							<div class="pt-3 border-t border-amber-500/20 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-[#8e8ea0]">
+								<span>Product: <strong class="text-white font-display">{verificationResult.product.name}</strong></span>
+								{#if verificationResult.product.batchNumber}
+									<span>·</span>
+									<span>LOT: <strong class="text-white font-mono-tight">{verificationResult.product.batchNumber} (#{verificationResult.product.serialIndex}/{verificationResult.product.batchQuantity})</strong></span>
+								{/if}
+								<span>·</span>
+								<span>First Unsealed: <strong class="text-amber-300 font-mono-tight">{formatDate(verificationResult.openedAt)}</strong></span>
+							</div>
+						</div>
+
+					{:else}
+						<!-- Case C: Not Found / Counterfeit -->
+						<div class="p-5 sm:p-6 rounded-2xl bg-rose-500/[0.08] border border-rose-500/30 text-rose-300">
+							<div class="flex items-start gap-3.5">
+								<div class="w-10 h-10 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center shrink-0 mt-0.5">
+									<ShieldAlert size={22} />
+								</div>
+								<div class="space-y-1">
+									<h2 class="text-base sm:text-lg font-bold text-rose-200 font-display">
+										❌ Unrecognized Security ID — Potential Counterfeit
+									</h2>
+									<p class="text-xs sm:text-sm text-[#d8d8e8] leading-relaxed max-w-2xl">
+										No certified product record was found for security ID: <code class="px-1.5 py-0.5 rounded bg-black/40 text-white font-mono-tight">{verificationResult.queryId}</code>. This ID does not exist in the official TearRubr blockchain registry. Do NOT consume, buy, or accept this product.
+									</p>
+								</div>
+							</div>
+						</div>
+					{/if}
+				</div>
+			{/if}
+
+		</div>
+
+		<!-- ========================================================================= -->
+		<!-- 2. PUBLIC LEDGER FEED (CONCEALS UNUSED IDs) -->
+		<!-- ========================================================================= -->
+		<div class="space-y-4">
+			
+			<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+				<div>
+					<h2 class="text-base sm:text-lg font-bold text-white font-display">
+						Public Ledger Records
+					</h2>
+					<p class="text-xs text-[#8e8ea0] mt-0.5">
+						Official batch registry. Security IDs for sealed items are concealed under the physical seal.
+					</p>
+				</div>
+
+				<!-- Filter Pills -->
+				<div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1 sm:pb-0 text-xs">
 					<button
 						onclick={() => (filterType = 'all')}
-						class="px-3.5 py-1.5 rounded-full font-medium transition-all whitespace-nowrap shrink-0 {filterType === 'all' ? 'bg-white text-[#08080e] shadow-sm font-bold' : 'bg-white/[0.04] text-[#8e8ea0] hover:text-white border border-white/[0.06]'}"
+						class="px-3 py-1.5 rounded-lg font-medium transition-all whitespace-nowrap shrink-0 {filterType === 'all' ? 'bg-white text-black font-bold shadow-sm' : 'bg-white/[0.03] text-[#8e8ea0] hover:text-white border border-white/[0.06]'}"
 					>
-						All Records ({data.products.length})
+						All Products ({productsList.length})
 					</button>
 					<button
-						onclick={() => (filterType = 'onchain')}
-						class="px-3.5 py-1.5 rounded-full font-medium transition-all inline-flex items-center gap-1 whitespace-nowrap shrink-0 {filterType === 'onchain' ? 'bg-emerald-400 text-[#08080e] shadow-sm font-bold' : 'bg-white/[0.04] text-[#8e8ea0] hover:text-white border border-white/[0.06]'}"
+						onclick={() => (filterType = 'sealed')}
+						class="px-3 py-1.5 rounded-lg font-medium transition-all whitespace-nowrap shrink-0 {filterType === 'sealed' ? 'bg-white text-black font-bold shadow-sm' : 'bg-white/[0.03] text-[#8e8ea0] hover:text-white border border-white/[0.06]'}"
 					>
-						<Check size={12} class="shrink-0" />
-						<span>Sepolia On-Chain ({onChainCount})</span>
+						Factory Sealed ({sealedCount})
+					</button>
+					<button
+						onclick={() => (filterType = 'opened')}
+						class="px-3 py-1.5 rounded-lg font-medium transition-all whitespace-nowrap shrink-0 {filterType === 'opened' ? 'bg-white text-black font-bold shadow-sm' : 'bg-white/[0.03] text-[#8e8ea0] hover:text-white border border-white/[0.06]'}"
+					>
+						Seal Opened ({openedCount})
 					</button>
 					<button
 						onclick={() => (filterType = 'batches')}
-						class="px-3.5 py-1.5 rounded-full font-medium transition-all whitespace-nowrap shrink-0 {filterType === 'batches' ? 'bg-indigo-400 text-[#08080e] shadow-sm font-bold' : 'bg-white/[0.04] text-[#8e8ea0] hover:text-white border border-white/[0.06]'}"
+						class="px-3 py-1.5 rounded-lg font-medium transition-all whitespace-nowrap shrink-0 {filterType === 'batches' ? 'bg-white text-black font-bold shadow-sm' : 'bg-white/[0.03] text-[#8e8ea0] hover:text-white border border-white/[0.06]'}"
 					>
 						Batch Runs ({batchCount})
 					</button>
-					<button
-						onclick={() => (filterType = 'single')}
-						class="px-3.5 py-1.5 rounded-full font-medium transition-all whitespace-nowrap shrink-0 {filterType === 'single' ? 'bg-white text-[#08080e] shadow-sm font-bold' : 'bg-white/[0.04] text-[#8e8ea0] hover:text-white border border-white/[0.06]'}"
-					>
-						Single Items ({singleCount})
-					</button>
-				</div>
-
-				<!-- Page Size Selector -->
-				<div class="flex items-center gap-2 text-[#7a7a8e] font-mono-tight text-[11px] self-end sm:self-auto shrink-0">
-					<span>Rows:</span>
-					{#each [10, 25, 50] as size}
-						<button
-							onclick={() => (pageSize = size)}
-							class="px-2 py-0.5 rounded-md transition-colors {pageSize === size ? 'bg-white/20 text-white font-bold' : 'text-[#8e8ea0] hover:text-white'}"
-						>
-							{size}
-						</button>
-					{/each}
 				</div>
 			</div>
-		</div>
 
-		<!-- Product Ledger Feed Anchor -->
-		<div id="ledger-feed" class="mt-6 sm:mt-8 scroll-mt-28">
-			{#if filteredProducts.length === 0}
-				<div class="p-8 sm:p-12 rounded-3xl bg-white/[0.02] border border-white/[0.06] text-center backdrop-blur-xl">
-					<div class="w-10 h-10 rounded-2xl bg-white/[0.05] text-[#8e8ea0] flex items-center justify-center mx-auto mb-3">
-						<Search size={20} />
+			<!-- Products Feed Anchor -->
+			<div id="ledger-feed" class="scroll-mt-28">
+				{#if filteredProducts.length === 0}
+					<div class="p-10 rounded-3xl bg-white/[0.02] border border-white/[0.06] text-center">
+						<div class="w-10 h-10 rounded-2xl bg-white/[0.04] text-[#8e8ea0] flex items-center justify-center mx-auto mb-3">
+							<Search size={18} />
+						</div>
+						<h3 class="text-sm font-bold text-white font-display">No matching records</h3>
+						<p class="text-xs text-[#8e8ea0] mt-1 max-w-sm mx-auto">
+							No products found for the selected filter.
+						</p>
 					</div>
-					<h3 class="text-sm font-bold text-white font-display">No matching on-chain records found</h3>
-					<p class="text-xs text-[#8e8ea0] mt-1 max-w-sm mx-auto">
-						No products or batches match your query. Try searching by lot number or product name.
-					</p>
-					<button
-						onclick={() => {
-							searchQuery = '';
-							filterType = 'all';
-						}}
-						class="mt-4 px-4 py-2 rounded-full bg-white/10 text-xs text-white hover:bg-white/20 transition-all font-display"
-					>
-						Reset Search
-					</button>
-				</div>
-			{:else}
-				<!-- Feed Item Cards -->
-				<div class="grid grid-cols-1 gap-3.5">
-					{#each paginatedProducts as product (product.id)}
-						<div
-							class="p-4 sm:p-5 rounded-2xl bg-white/[0.02] hover:bg-white/[0.04] border border-white/[0.08] hover:border-white/[0.15] backdrop-blur-xl transition-all duration-200 shadow-lg group"
-							in:fade={{ duration: 120 }}
-						>
-							<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
-								
-								<!-- Left: Product Identity & Verified Status Badges -->
-								<div class="space-y-2 min-w-0 flex-1">
-									<div class="flex flex-wrap items-center gap-1.5 sm:gap-2">
-										<a
-											href="/verify/{product.id}"
-											class="text-base font-bold text-white hover:text-accent font-display transition-colors break-words"
-										>
-											{product.name}
-										</a>
-
-										<!-- Real On-Chain Sepolia Status Badge -->
-										{#if product.blockchainTxHash}
-											<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[10px] sm:text-[11px] font-mono-tight whitespace-nowrap shrink-0">
-												<Check size={11} class="shrink-0" />
-												<span class="font-semibold">Sepolia On-Chain</span>
-											</span>
-											{#if (product as any).indexedByGraph}
-												<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 text-[10px] font-mono-tight whitespace-nowrap shrink-0" title="Indexed by The Graph Studio">
-													<Layers size={10} class="shrink-0" />
-													<span>The Graph</span>
+				{:else}
+					<!-- Clean Product Cards -->
+					<div class="grid grid-cols-1 gap-3">
+						{#each paginatedProducts as product (product.displayKey || product.id)}
+							<div
+								class="p-4 sm:p-5 rounded-2xl bg-white/[0.02] hover:bg-white/[0.04] border border-white/[0.08] hover:border-white/20 transition-all duration-150 shadow-sm"
+								in:fade={{ duration: 100 }}
+							>
+								<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+									
+									<!-- Left: Product Info -->
+									<div class="space-y-1.5 min-w-0 flex-1">
+										
+										<div class="flex flex-wrap items-center gap-2">
+											{#if product.sealStatus === 'opened' && product.id}
+												<a
+													href="/verify/{product.id}"
+													class="text-base font-bold text-white hover:underline font-display transition-colors"
+												>
+													{product.name}
+												</a>
+											{:else}
+												<span class="text-base font-bold text-white font-display">
+													{product.name}
 												</span>
 											{/if}
-										{:else}
-											<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/[0.05] text-[#8e8ea0] border border-white/10 text-[10px] font-mono-tight whitespace-nowrap shrink-0">
-												Local Ledger
-											</span>
-										{/if}
 
-										<!-- Batch Badge -->
-										{#if product.batchNumber}
-											<span class="px-2 py-0.5 rounded-md bg-indigo-500/15 text-indigo-400 border border-indigo-500/30 text-[10px] sm:text-[11px] font-mono-tight whitespace-nowrap shrink-0">
-												LOT: {product.batchNumber} (#{product.serialIndex}/{product.batchQuantity})
-											</span>
-										{/if}
-
-										<!-- Tamper Seal Status Badge -->
-										<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] sm:text-[11px] font-mono-tight whitespace-nowrap shrink-0 {product.sealStatus === 'opened' ? 'bg-amber-500/15 text-amber-300 border border-amber-500/30' : 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30'}">
-											{#if product.sealStatus === 'opened'}
-												<Unlock size={10} class="shrink-0" />
-												<span>Torn / Void</span>
+											<!-- Status Badge -->
+											{#if product.sealStatus !== 'opened'}
+												<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-xs font-mono-tight font-semibold">
+													<ShieldCheck size={13} class="shrink-0" />
+													<span>Factory Sealed · Unused</span>
+												</span>
 											{:else}
-												<Lock size={10} class="shrink-0" />
-												<span>Seal: Intact</span>
+												<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 text-xs font-mono-tight font-semibold">
+													<AlertTriangle size={13} class="shrink-0" />
+													<span>Seal Opened</span>
+												</span>
 											{/if}
-										</span>
-									</div>
 
-									<div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[#8e8ea0]">
-										<span>Issuer: <strong class="text-[#c0c0d4]">{product.manufacturer}</strong></span>
-										{#if product.description}
+											<!-- LOT chip -->
+											{#if product.batchNumber}
+												<span class="px-2 py-0.5 rounded bg-white/[0.05] text-white border border-white/10 text-[11px] font-mono-tight">
+													LOT: {product.batchNumber} (#{product.serialIndex}/{product.batchQuantity})
+												</span>
+											{/if}
+										</div>
+
+										<!-- Metadata Line -->
+										<div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[#8e8ea0]">
+											<span>Issuer: <strong class="text-white font-mono-tight">{truncate(product.manufacturer, 6, 4)}</strong></span>
 											<span class="text-white/20 hidden sm:inline">·</span>
-											<span class="line-clamp-1">{product.description}</span>
-										{/if}
-										<span class="text-white/20 hidden sm:inline">·</span>
-										<span class="whitespace-nowrap">{formatDate(product.createdAt)}</span>
-									</div>
-								</div>
-
-								<!-- Bottom (Mobile) / Right (Desktop): IDs, Hashes & Actions (ZERO WRAPPING) -->
-								<div class="w-full sm:w-auto pt-2.5 sm:pt-0 border-t sm:border-t-0 border-white/[0.04] flex items-center justify-between sm:justify-end gap-2 shrink-0">
-									<div class="flex items-center gap-1.5 shrink-0">
-										<!-- On-Chain Tx Link -->
-										{#if product.blockchainTxHash}
-											<a
-												href="{data.explorerBaseUrl}/tx/{product.blockchainTxHash}"
-												target="_blank"
-												rel="noopener noreferrer"
-												class="px-2 sm:px-2.5 py-1 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-[11px] font-mono-tight text-accent hover:text-white transition-colors inline-flex items-center gap-1 whitespace-nowrap shrink-0"
-												title="View on Sepolia Etherscan"
-											>
-												<span class="whitespace-nowrap">Tx: {truncate(product.blockchainTxHash, 4, 3)}</span>
-												<ExternalLink size={10} class="shrink-0" />
-											</a>
-										{/if}
-
-										<!-- Copy ID Button -->
-										<button
-											onclick={() => copyToClipboard(product.id, product.id)}
-											class="px-2 sm:px-2.5 py-1 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-[11px] font-mono-tight text-[#8e8ea0] hover:text-white transition-colors inline-flex items-center gap-1 whitespace-nowrap shrink-0"
-											title="Copy Unique ID"
-										>
-											{#if copiedId === product.id}
-												<Check size={11} class="text-emerald-400 shrink-0" />
-												<span class="text-emerald-400 whitespace-nowrap">Copied</span>
+											{#if product.sealStatus === 'opened'}
+												<span class="text-amber-400 font-medium">
+													Seal broken {product.openedAt ? `on ${formatDate(product.openedAt)}` : 'previously'}
+												</span>
 											{:else}
-												<Copy size={11} class="shrink-0 text-[#606074]" />
-												<span class="whitespace-nowrap">{truncate(product.id, 4, 3)}</span>
+												<span class="text-emerald-400 font-medium">
+													Factory sealed · Physical seal intact
+												</span>
 											{/if}
-										</button>
+											<span class="text-white/20 hidden sm:inline">·</span>
+											<span class="whitespace-nowrap font-mono-tight text-[11px]">{formatDate(product.createdAt)}</span>
+										</div>
+
 									</div>
 
-									<!-- Verify CTA -->
-									<a
-										href="/verify/{product.id}"
-										class="px-3.5 sm:px-4 py-1.5 rounded-full bg-white text-[#08080e] hover:bg-white/90 font-bold text-xs font-display transition-all shadow-sm inline-flex items-center gap-1.5 whitespace-nowrap shrink-0"
-									>
-										<span>Verify Proof</span>
-										<ArrowRight size={11} class="shrink-0" />
-									</a>
+									<!-- Right: Security ID (Concealed if unused) & Action -->
+									<div class="pt-2 sm:pt-0 border-t sm:border-t-0 border-white/[0.04] flex items-center justify-between sm:justify-end gap-3 shrink-0">
+										
+										<!-- ID Display: Only exposed if already opened! Concealed under seal if unused -->
+										{#if product.sealStatus === 'opened' && product.id}
+											{@const currentId = product.id}
+											<button
+												onclick={() => copyToClipboard(currentId, currentId)}
+												class="text-xs font-mono-tight text-[#8e8ea0] hover:text-white transition-colors inline-flex items-center gap-1"
+												title="Copy Product ID"
+											>
+												{#if copiedId === product.id}
+													<Check size={12} class="text-emerald-400" />
+													<span class="text-emerald-400">Copied</span>
+												{:else}
+													<Copy size={12} class="text-[#606074]" />
+													<span>{truncate(product.id, 6, 4)}</span>
+												{/if}
+											</button>
+
+											<a
+												href="/verify/{product.id}"
+												class="px-3.5 py-1.5 rounded-lg bg-white text-black font-semibold hover:bg-white/90 text-xs font-display transition-all inline-flex items-center gap-1.5 shadow-sm"
+											>
+												<span>View Certificate</span>
+												<ArrowRight size={12} class="shrink-0" />
+											</a>
+										{:else}
+											<!-- Concealed for Unopened Products -->
+											<span class="inline-flex items-center gap-1 text-xs text-[#8e8ea0]" title="Unique ID is concealed under physical packaging seal">
+												<Lock size={12} class="text-emerald-400/70" />
+												<span class="font-mono-tight text-white/40 text-[11px]">ID Concealed</span>
+											</span>
+
+											<button
+												onclick={focusSearchInput}
+												class="px-3 py-1.5 rounded-lg border border-white/10 hover:border-white/20 text-xs text-[#8e8ea0] hover:text-white transition-all inline-flex items-center gap-1.5 font-display"
+											>
+												<span>Verify with ID</span>
+												<ArrowRight size={12} class="shrink-0" />
+											</button>
+										{/if}
+
+									</div>
+
 								</div>
-
 							</div>
-						</div>
-					{/each}
-				</div>
-
-				<!-- ============================================================= -->
-				<!-- PAGINATION BAR -->
-				<!-- ============================================================= -->
-				<div class="mt-6 sm:mt-8 p-3.5 sm:p-4 rounded-2xl bg-white/[0.02] border border-white/[0.08] backdrop-blur-xl flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
-					<!-- Range indicator -->
-					<div class="text-[11px] sm:text-xs text-[#8e8ea0] font-mono-tight whitespace-nowrap">
-						Showing <strong class="text-white">{startIndex}</strong> – <strong class="text-white">{endIndex}</strong> of <strong class="text-white">{filteredProducts.length}</strong> records
+						{/each}
 					</div>
 
-					<!-- Page number buttons -->
-					<div class="flex items-center gap-1.5 text-xs font-display shrink-0">
-						<!-- Previous Button -->
-						<button
-							onclick={() => goToPage(currentPage - 1)}
-							disabled={currentPage === 1}
-							class="p-1.5 sm:px-3 sm:py-1.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-white disabled:opacity-30 disabled:hover:bg-white/[0.04] transition-all inline-flex items-center gap-1 whitespace-nowrap"
-							aria-label="Previous page"
-						>
-							<ChevronLeft size={14} class="shrink-0" />
-							<span class="hidden sm:inline">Previous</span>
-						</button>
-
-						<!-- Page Numbers -->
-						<div class="flex items-center gap-1">
-							{#each visiblePages as p}
-								{#if typeof p === 'number'}
-									<button
-										onclick={() => goToPage(p)}
-										class="w-7 h-7 sm:w-8 sm:h-8 rounded-xl font-mono-tight text-xs transition-all {currentPage === p ? 'bg-white text-[#08080e] font-bold shadow-md' : 'text-[#8e8ea0] hover:text-white hover:bg-white/[0.05]'}"
-									>
-										{p}
-									</button>
-								{:else}
-									<span class="px-1 text-[#606074] font-mono-tight text-xs">…</span>
-								{/if}
-							{/each}
+					<!-- Pagination Bar -->
+					<div class="mt-6 p-4 rounded-2xl bg-white/[0.02] border border-white/[0.08] flex flex-col sm:flex-row items-center justify-between gap-3">
+						<div class="text-xs text-[#8e8ea0] font-mono-tight">
+							Showing <strong class="text-white">{startIndex}</strong> – <strong class="text-white">{endIndex}</strong> of <strong class="text-white">{filteredProducts.length}</strong> records
 						</div>
 
-						<!-- Next Button -->
-						<button
-							onclick={() => goToPage(currentPage + 1)}
-							disabled={currentPage === totalPages}
-							class="p-1.5 sm:px-3 sm:py-1.5 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-white disabled:opacity-30 disabled:hover:bg-white/[0.04] transition-all inline-flex items-center gap-1 whitespace-nowrap"
-							aria-label="Next page"
-						>
-							<span class="hidden sm:inline">Next</span>
-							<ChevronRight size={14} class="shrink-0" />
-						</button>
+						<div class="flex items-center gap-1.5 text-xs font-display">
+							<button
+								onclick={() => goToPage(currentPage - 1)}
+								disabled={currentPage === 1}
+								class="p-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-white disabled:opacity-30 transition-all inline-flex items-center gap-1"
+								aria-label="Previous page"
+							>
+								<ChevronLeft size={14} />
+								<span class="hidden sm:inline">Previous</span>
+							</button>
+
+							<div class="flex items-center gap-1">
+								{#each visiblePages as p}
+									{#if typeof p === 'number'}
+										<button
+											onclick={() => goToPage(p)}
+											class="w-7 h-7 rounded-lg font-mono-tight text-xs transition-all {currentPage === p ? 'bg-white text-black font-bold shadow-sm' : 'text-[#8e8ea0] hover:text-white'}"
+										>
+											{p}
+										</button>
+									{:else}
+										<span class="px-1 text-[#606074] font-mono-tight text-xs">…</span>
+									{/if}
+								{/each}
+							</div>
+
+							<button
+								onclick={() => goToPage(currentPage + 1)}
+								disabled={currentPage === totalPages}
+								class="p-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-white disabled:opacity-30 transition-all inline-flex items-center gap-1"
+								aria-label="Next page"
+							>
+								<span class="hidden sm:inline">Next</span>
+								<ChevronRight size={14} />
+							</button>
+						</div>
 					</div>
-				</div>
-			{/if}
+				{/if}
+			</div>
+
 		</div>
+
 	</main>
 </div>

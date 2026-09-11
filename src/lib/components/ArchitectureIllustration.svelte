@@ -49,59 +49,61 @@
 	];
 </script>
 
-<div class="rounded-3xl bg-[#0b0b14]/80 border border-white/[0.08] p-6 sm:p-8 backdrop-blur-2xl shadow-2xl relative overflow-hidden">
+<div class="rounded-2xl sm:rounded-3xl bg-[#0b0b14]/80 border border-white/[0.08] p-4 sm:p-8 backdrop-blur-2xl shadow-2xl relative overflow-hidden">
 	<!-- Background aura -->
 	<div class="absolute -top-24 -right-24 w-80 h-80 rounded-full bg-[#6366f1]/15 blur-[90px] pointer-events-none"></div>
 	<div class="absolute -bottom-24 -left-24 w-80 h-80 rounded-full bg-[#10b981]/15 blur-[90px] pointer-events-none"></div>
 
 	<!-- Top Toolbar: Mode Switcher & Tamper Simulation Toggle -->
-	<div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-white/[0.08] relative z-10">
-		<div class="flex items-center gap-2 p-1 rounded-full bg-[#07070c] border border-white/[0.08]">
+	<div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4 pb-5 sm:pb-6 border-b border-white/[0.08] relative z-10">
+		<div class="w-full sm:w-auto grid grid-cols-2 sm:flex sm:items-center gap-1 sm:gap-2 p-1 rounded-xl bg-[#07070c] border border-white/[0.08]">
 			<button
 				onclick={() => {
 					activeModel = 'tearrubr';
 					simulateTamper = false;
 				}}
-				class="px-4 py-1.5 rounded-full text-xs font-semibold transition-all font-display {activeModel === 'tearrubr' ? 'bg-white text-[#08080e] shadow-md' : 'text-[#8e8ea0] hover:text-white'}"
+				class="px-2.5 sm:px-4 py-2 sm:py-1.5 rounded-lg text-[11px] sm:text-xs font-semibold transition-all font-display text-center whitespace-nowrap {activeModel === 'tearrubr' ? 'bg-white text-[#08080e] shadow-md' : 'text-[#8e8ea0] hover:text-white'}"
 			>
-				TearRubr Cryptographic Pipeline
+				<span class="sm:hidden">TearRubr</span>
+				<span class="hidden sm:inline">TearRubr Tamper-Proof Pipeline</span>
 			</button>
 			<button
 				onclick={() => {
 					activeModel = 'traditional';
 					simulateTamper = false;
 				}}
-				class="px-4 py-1.5 rounded-full text-xs font-semibold transition-all font-display {activeModel === 'traditional' ? 'bg-white text-[#08080e] shadow-md' : 'text-[#8e8ea0] hover:text-white'}"
+				class="px-2.5 sm:px-4 py-2 sm:py-1.5 rounded-lg text-[11px] sm:text-xs font-semibold transition-all font-display text-center whitespace-nowrap {activeModel === 'traditional' ? 'bg-white text-[#08080e] shadow-md' : 'text-[#8e8ea0] hover:text-white'}"
 			>
-				Traditional Centralized DB
+				<span class="sm:hidden">Standard DB</span>
+				<span class="hidden sm:inline">Traditional Centralized DB</span>
 			</button>
 		</div>
 
 		<!-- Tamper Attack Simulation Button -->
 		<button
 			onclick={() => (simulateTamper = !simulateTamper)}
-			class="px-3.5 py-1.5 rounded-full text-xs font-medium border transition-all flex items-center gap-2 {simulateTamper ? 'bg-danger/20 border-danger text-red-300' : 'bg-white/[0.04] border-white/10 text-text-secondary hover:text-white'}"
+			class="w-full sm:w-auto px-3.5 py-2 sm:py-1.5 rounded-lg text-[11px] sm:text-xs font-medium border transition-all flex items-center justify-center gap-2 whitespace-nowrap {simulateTamper ? 'bg-danger/20 border-danger text-red-300' : 'bg-white/[0.04] border-white/10 text-text-secondary hover:text-white'}"
 		>
-			<span class="w-2 h-2 rounded-full {simulateTamper ? 'bg-danger animate-ping' : 'bg-text-tertiary'}"></span>
-			<span>{simulateTamper ? 'Simulating Database Alteration Attack' : 'Simulate Database Alteration'}</span>
+			<span class="w-2 h-2 rounded-full shrink-0 {simulateTamper ? 'bg-danger animate-ping' : 'bg-text-tertiary'}"></span>
+			<span>{simulateTamper ? 'Simulating Database Alteration' : 'Simulate Database Alteration'}</span>
 		</button>
 	</div>
 
 	<!-- Tamper Attack Alert Box -->
 	{#if simulateTamper}
 		<div
-			class="mt-6 p-4 rounded-2xl border transition-all relative z-10 {activeModel === 'traditional' ? 'bg-danger/10 border-danger/40 text-red-200' : 'bg-emerald-500/10 border-emerald-500/40 text-emerald-200'}"
+			class="mt-5 sm:mt-6 p-3.5 sm:p-4 rounded-2xl border transition-all relative z-10 {activeModel === 'traditional' ? 'bg-danger/10 border-danger/40 text-red-200' : 'bg-emerald-500/10 border-emerald-500/40 text-emerald-200'}"
 			transition:fade={{ duration: 150 }}
 		>
 			<div class="flex items-start gap-3">
-				<div class="text-xl shrink-0 mt-0.5">
+				<div class="text-lg sm:text-xl shrink-0 mt-0.5">
 					{activeModel === 'traditional' ? '🚨' : '🛡️'}
 				</div>
 				<div>
-					<h4 class="text-sm font-bold font-display">
+					<h4 class="text-xs sm:text-sm font-bold font-display leading-snug">
 						{activeModel === 'traditional' ? 'Centralized DB Failure: Silent Record Forgery' : 'TearRubr Immutable Security: Attack Instantly Blocked'}
 					</h4>
-					<p class="text-xs opacity-90 mt-1 leading-relaxed">
+					<p class="text-[11px] sm:text-xs opacity-90 mt-1 leading-relaxed text-pretty">
 						{#if activeModel === 'traditional'}
 							A rogue database admin or attacker modified the serial database. The website now says the counterfeit product is "Authentic". The buyer has zero mathematical way to know the record was forged.
 						{:else}
@@ -115,24 +117,24 @@
 
 	<!-- Architecture Interactive Pipeline -->
 	{#if activeModel === 'tearrubr'}
-		<div class="mt-8 relative z-10">
+		<div class="mt-6 sm:mt-8 relative z-10">
 			<!-- Horizontal Flow Nodes (Desktop & Tablet) -->
-			<div class="grid grid-cols-1 md:grid-cols-5 gap-3">
+			<div class="grid grid-cols-1 md:grid-cols-5 gap-2.5 sm:gap-3">
 				{#each nodes as node}
 					<button
 						onclick={() => (activeNode = node.id)}
-						class="text-left p-4 rounded-2xl border transition-all duration-200 group relative {activeNode === node.id ? 'bg-white/[0.08] border-accent/60 shadow-lg' : 'bg-white/[0.02] border-white/[0.06] hover:bg-white/[0.05]'}"
+						class="text-left p-3 sm:p-4 rounded-xl sm:rounded-2xl border transition-all duration-200 group relative {activeNode === node.id ? 'bg-white/[0.08] border-accent/60 shadow-lg' : 'bg-white/[0.02] border-white/[0.06] hover:bg-white/[0.05]'}"
 					>
-						<div class="flex items-center justify-between mb-2">
-							<span class="text-[10px] uppercase tracking-wider font-semibold font-mono-tight {activeNode === node.id ? 'text-accent' : 'text-[#7a7a8e]'}">
+						<div class="flex items-center justify-between mb-1 sm:mb-2">
+							<span class="text-[10px] uppercase tracking-wider font-semibold font-mono-tight whitespace-nowrap {activeNode === node.id ? 'text-accent' : 'text-[#7a7a8e]'}">
 								{node.badge}
 							</span>
-							<span class="w-1.5 h-1.5 rounded-full {activeNode === node.id ? 'bg-accent shadow-sm' : 'bg-white/20'}"></span>
+							<span class="w-1.5 h-1.5 rounded-full shrink-0 {activeNode === node.id ? 'bg-accent shadow-sm' : 'bg-white/20'}"></span>
 						</div>
-						<div class="text-xs font-bold text-white font-display mb-1 group-hover:text-accent transition-colors">
+						<div class="text-xs font-bold text-white font-display mb-0.5 sm:mb-1 group-hover:text-accent transition-colors whitespace-nowrap truncate">
 							{node.title}
 						</div>
-						<div class="text-[11px] text-[#8e8ea0] line-clamp-1">
+						<div class="text-[11px] text-[#8e8ea0] whitespace-nowrap truncate">
 							{node.subtitle}
 						</div>
 					</button>
@@ -140,31 +142,32 @@
 			</div>
 
 			<!-- Active Node Detail Inspector Card -->
-			<div class="mt-6 p-5 rounded-2xl bg-[#08080e]/90 border border-white/[0.08] relative overflow-hidden">
-				<div class="flex items-center gap-3 mb-2">
-					<span class="px-2 py-0.5 rounded-md bg-accent/20 text-accent font-mono-tight text-xs font-bold">
+			<div class="mt-5 sm:mt-6 p-4 sm:p-5 rounded-2xl bg-[#08080e]/90 border border-white/[0.08] relative overflow-hidden">
+				<div class="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-3 mb-2">
+					<span class="px-2 py-0.5 rounded-md bg-accent/20 text-accent font-mono-tight text-[10px] sm:text-xs font-bold w-fit whitespace-nowrap shrink-0">
 						STAGE {activeNode + 1} OF 5
 					</span>
-					<h3 class="text-sm font-bold text-white font-display">
-						{nodes[activeNode].title} — {nodes[activeNode].subtitle}
+					<h3 class="text-xs sm:text-sm font-bold text-white font-display">
+						<span>{nodes[activeNode].title}</span>
+						<span class="text-[#8e8ea0] font-normal text-[11px] sm:text-xs block sm:inline"> — {nodes[activeNode].subtitle}</span>
 					</h3>
 				</div>
-				<p class="text-xs text-[#9494a8] leading-relaxed max-w-3xl">
+				<p class="text-xs text-[#9494a8] leading-relaxed max-w-3xl text-pretty">
 					{nodes[activeNode].desc}
 				</p>
 
 				<!-- Architectural Guarantee Badges -->
-				<div class="mt-4 pt-3 border-t border-white/[0.06] flex flex-wrap gap-4 text-[11px] text-[#7a7a8e] font-mono-tight">
-					<span class="flex items-center gap-1.5">
-						<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+				<div class="mt-4 pt-3 border-t border-white/[0.06] flex flex-wrap gap-2.5 sm:gap-4 text-[10px] sm:text-[11px] text-[#7a7a8e] font-mono-tight">
+					<span class="flex items-center gap-1.5 whitespace-nowrap">
+						<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0"></span>
 						Zero-Knowledge Merkle Root
 					</span>
-					<span class="flex items-center gap-1.5">
-						<span class="w-1.5 h-1.5 rounded-full bg-indigo-400"></span>
+					<span class="flex items-center gap-1.5 whitespace-nowrap">
+						<span class="w-1.5 h-1.5 rounded-full bg-indigo-400 shrink-0"></span>
 						Ethereum Sepolia Consensus
 					</span>
-					<span class="flex items-center gap-1.5">
-						<span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
+					<span class="flex items-center gap-1.5 whitespace-nowrap">
+						<span class="w-1.5 h-1.5 rounded-full bg-cyan-400 shrink-0"></span>
 						Indexed via The Graph
 					</span>
 				</div>
@@ -172,26 +175,27 @@
 		</div>
 	{:else}
 		<!-- Traditional Centralized DB Illustration -->
-		<div class="mt-8 p-6 rounded-2xl bg-[#08080e]/90 border border-danger/20 text-left relative z-10">
-			<div class="flex items-center gap-2 mb-3 text-danger text-xs font-bold tracking-wide uppercase">
-				<span>⚠️ The Flawed Centralized Database Model</span>
+		<div class="mt-6 sm:mt-8 p-4 sm:p-6 rounded-2xl bg-[#08080e]/90 border border-danger/20 text-left relative z-10">
+			<div class="flex items-center gap-2 mb-3 text-danger text-[11px] sm:text-xs font-bold tracking-wide uppercase">
+				<span class="sm:hidden">⚠️ Flawed Centralized DB Model</span>
+				<span class="hidden sm:inline">⚠️ The Flawed Centralized Database Model</span>
 			</div>
-			<p class="text-xs text-[#9494a8] leading-relaxed mb-6">
+			<p class="text-xs text-[#9494a8] leading-relaxed mb-5 sm:mb-6 text-pretty">
 				In traditional anti-counterfeiting systems, a single company or cloud server stores the database. Consumers are asked to trust that the database operator, server administrators, and API hosts never modify or lose records.
 			</p>
 
 			<div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
 				<div class="p-3.5 rounded-xl bg-danger/5 border border-danger/20 text-[#c0c0d4]">
-					<div class="font-bold text-white mb-1">Single Point of Failure</div>
-					<div class="text-[11px] text-[#8e8ea0]">If the manufacturer server goes down, products cannot be verified worldwide.</div>
+					<div class="font-bold text-white mb-1 whitespace-nowrap">Single Point of Failure</div>
+					<div class="text-[11px] text-[#8e8ea0] leading-snug">If the manufacturer server goes down, products cannot be verified worldwide.</div>
 				</div>
 				<div class="p-3.5 rounded-xl bg-danger/5 border border-danger/20 text-[#c0c0d4]">
-					<div class="font-bold text-white mb-1">Silent Alteration Risk</div>
-					<div class="text-[11px] text-[#8e8ea0]">An internal bad actor can alter serials or register duplicate counterfeit products secretly.</div>
+					<div class="font-bold text-white mb-1 whitespace-nowrap">Silent Alteration Risk</div>
+					<div class="text-[11px] text-[#8e8ea0] leading-snug">An internal bad actor can alter serials or register duplicate counterfeit products secretly.</div>
 				</div>
 				<div class="p-3.5 rounded-xl bg-danger/5 border border-danger/20 text-[#c0c0d4]">
-					<div class="font-bold text-white mb-1">No Mathematical Proof</div>
-					<div class="text-[11px] text-[#8e8ea0]">Consumers receive a website response with zero cryptographic guarantee of authenticity.</div>
+					<div class="font-bold text-white mb-1 whitespace-nowrap">No Mathematical Proof</div>
+					<div class="text-[11px] text-[#8e8ea0] leading-snug">Consumers receive a website response with zero cryptographic guarantee of authenticity.</div>
 				</div>
 			</div>
 		</div>

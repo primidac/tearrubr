@@ -51,7 +51,7 @@
 			{#if !is404}
 				<button
 					onclick={reloadPage}
-					class="px-5 py-2 rounded-full bg-white text-[#08080e] hover:bg-white/90 font-bold text-xs font-display transition-all"
+					class="px-5 py-2 rounded-lg bg-white text-[#08080e] hover:bg-white/90 font-bold text-xs font-display transition-all"
 				>
 					Try Again
 				</button>
@@ -59,14 +59,14 @@
 
 			<a
 				href="/"
-				class="px-5 py-2 rounded-full {is404 ? 'bg-white text-[#08080e] hover:bg-white/90 font-bold' : 'bg-white/10 hover:bg-white/15 text-white font-semibold'} text-xs font-display transition-all"
+				class="px-5 py-2 rounded-lg {is404 ? 'bg-white text-[#08080e] hover:bg-white/90 font-bold' : 'bg-white/10 hover:bg-white/15 text-white font-semibold'} text-xs font-display transition-all"
 			>
 				Go Home
 			</a>
 
 			<a
 				href="/verify"
-				class="px-4 py-2 rounded-full text-xs text-[#8e8ea0] hover:text-white transition-colors"
+				class="px-4 py-2 rounded-lg text-xs text-[#8e8ea0] hover:text-white transition-colors"
 			>
 				Public Ledger →
 			</a>
