@@ -3,6 +3,26 @@
 	import Logo from '$lib/components/Logo.svelte';
 	import PrivyAuthModal from '$lib/components/PrivyAuthModal.svelte';
 	import { auth } from '$lib/auth.svelte';
+	import {
+		ClipboardList,
+		Boxes,
+		ShieldAlert,
+		ShieldCheck,
+		Sparkles,
+		Globe,
+		ScrollText,
+		Home,
+		Menu,
+		X,
+		Plus,
+		Search,
+		Copy,
+		Check,
+		ExternalLink,
+		ArrowRight,
+		Activity,
+		Layers
+	} from '@lucide/svelte';
 
 	let { data } = $props();
 
@@ -129,9 +149,10 @@
 				<!-- Close on mobile -->
 				<button
 					onclick={() => (isMobileSidebarOpen = false)}
-					class="lg:hidden text-[#8e8ea0] hover:text-white text-lg p-1"
+					class="lg:hidden text-[#8e8ea0] hover:text-white p-1 rounded-lg transition-colors"
+					aria-label="Close menu"
 				>
-					✕
+					<X size={18} />
 				</button>
 			</div>
 
@@ -160,7 +181,7 @@
 					class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all {activeView === 'products' ? 'bg-white text-[#08080e] font-bold shadow-md' : 'text-[#8e8ea0] hover:text-white hover:bg-white/[0.04]'}"
 				>
 					<div class="flex items-center gap-2.5">
-						<span>📋</span>
+						<ClipboardList size={16} class={activeView === 'products' ? 'text-[#08080e]' : 'text-indigo-400'} />
 						<span>All Authenticity Records</span>
 					</div>
 					<span class="text-[11px] font-mono-tight {activeView === 'products' ? 'text-[#08080e]' : 'text-[#606074]'}">
@@ -176,7 +197,7 @@
 					class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all {activeView === 'batches' ? 'bg-white text-[#08080e] font-bold shadow-md' : 'text-[#8e8ea0] hover:text-white hover:bg-white/[0.04]'}"
 				>
 					<div class="flex items-center gap-2.5">
-						<span>📦</span>
+						<Boxes size={16} class={activeView === 'batches' ? 'text-[#08080e]' : 'text-cyan-400'} />
 						<span>Batch Merkle Runs</span>
 					</div>
 					<span class="text-[11px] font-mono-tight {activeView === 'batches' ? 'text-[#08080e]' : 'text-[#606074]'}">
@@ -192,7 +213,7 @@
 					class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all {activeView === 'alerts' ? 'bg-amber-400 text-[#08080e] font-bold shadow-md' : 'text-[#8e8ea0] hover:text-white hover:bg-white/[0.04]'}"
 				>
 					<div class="flex items-center gap-2.5">
-						<span>⚠️</span>
+						<ShieldAlert size={16} class={activeView === 'alerts' ? 'text-[#08080e]' : 'text-amber-400'} />
 						<span>Seal Breach Telemetry</span>
 					</div>
 					{#if brokenSeals > 0}
@@ -212,7 +233,7 @@
 					href="/register"
 					class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-indigo-300 hover:text-white hover:bg-indigo-500/10 transition-colors"
 				>
-					<span>✨</span>
+					<Sparkles size={16} class="text-indigo-400" />
 					<span>+ New Batch Rollup</span>
 				</a>
 
@@ -220,7 +241,7 @@
 					href="/verify"
 					class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-[#8e8ea0] hover:text-white hover:bg-white/[0.04] transition-colors"
 				>
-					<span>🌐</span>
+					<Globe size={16} class="text-cyan-400" />
 					<span>Public Ledger</span>
 				</a>
 
@@ -231,17 +252,17 @@
 					class="flex items-center justify-between px-3 py-2.5 rounded-xl text-[#8e8ea0] hover:text-white hover:bg-white/[0.04] transition-colors"
 				>
 					<div class="flex items-center gap-2.5">
-						<span>📜</span>
+						<ScrollText size={16} class="text-emerald-400" />
 						<span>Sepolia Contract</span>
 					</div>
-					<span class="text-[10px] text-[#606074]">↗</span>
+					<ExternalLink size={12} class="text-[#606074]" />
 				</a>
 
 				<a
 					href="/"
 					class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-[#8e8ea0] hover:text-white hover:bg-white/[0.04] transition-colors"
 				>
-					<span>🏠</span>
+					<Home size={16} class="text-[#8e8ea0]" />
 					<span>Back to Home</span>
 				</a>
 			</nav>
@@ -279,9 +300,10 @@
 
 					<button
 						onclick={() => auth.openModal()}
-						class="w-full py-1.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.1] text-white text-[11px] font-display transition-colors"
+						class="w-full py-1.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.1] text-white text-[11px] font-display transition-colors flex items-center justify-center gap-1.5"
 					>
-						Switch Account ↗
+						<span>Switch Account</span>
+						<ExternalLink size={12} />
 					</button>
 				</div>
 			{:else}
@@ -312,10 +334,10 @@
 			<div class="flex items-center gap-3 sm:gap-4 min-w-0">
 				<button
 					onclick={() => (isMobileSidebarOpen = true)}
-					class="lg:hidden p-2 rounded-xl bg-white/[0.05] border border-white/10 text-white text-xs"
+					class="lg:hidden p-2 rounded-xl bg-white/[0.05] border border-white/10 text-white text-xs hover:bg-white/10 transition-colors"
 					aria-label="Open navigation drawer"
 				>
-					☰
+					<Menu size={16} />
 				</button>
 
 				<div class="flex items-center gap-2 text-xs font-display">
@@ -332,14 +354,14 @@
 				<!-- Live Sepolia Block Status Badge -->
 				<div class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.03] border border-white/[0.08] text-[11px] font-mono-tight text-[#8e8ea0]">
 					<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-					<span>Sepolia #{auth.chainStatus.blockNumber ? auth.chainStatus.blockNumber.toLocaleString() : '11,683,834'}</span>
+					<span>Sepolia #{auth.chainStatus.blockNumber ? auth.chainStatus.blockNumber.toLocaleString() : '11,684,064'}</span>
 				</div>
 
 				<a
 					href="/register"
 					class="px-4 py-1.5 rounded-full bg-white text-[#08080e] hover:bg-white/90 font-bold text-xs font-display transition-all shadow-md flex items-center gap-1.5 shrink-0"
 				>
-					<span>+</span>
+					<Plus size={14} />
 					<span>New Batch</span>
 				</a>
 			</div>
@@ -359,7 +381,10 @@
 				<!-- Card 1: Total Units -->
 				<div class="p-5 rounded-2xl bg-[#0c0c16]/90 border border-white/[0.08] backdrop-blur-xl shadow-lg relative overflow-hidden">
 					<div class="flex items-center justify-between text-xs text-[#8e8ea0] mb-2 font-display">
-						<span>Units Minted</span>
+						<div class="flex items-center gap-1.5">
+							<Layers size={14} class="text-indigo-400" />
+							<span>Units Minted</span>
+						</div>
 						<span class="text-emerald-400 font-mono-tight text-[10px]">On-Chain ✓</span>
 					</div>
 					<div class="text-3xl font-extrabold text-white font-display">
@@ -373,7 +398,10 @@
 				<!-- Card 2: Batch Runs -->
 				<div class="p-5 rounded-2xl bg-[#0c0c16]/90 border border-white/[0.08] backdrop-blur-xl shadow-lg relative overflow-hidden">
 					<div class="flex items-center justify-between text-xs text-[#8e8ea0] mb-2 font-display">
-						<span>Merkle Batches</span>
+						<div class="flex items-center gap-1.5">
+							<Boxes size={14} class="text-cyan-400" />
+							<span>Merkle Batches</span>
+						</div>
 						<span class="text-indigo-400 font-mono-tight text-[10px]">1 Tx / Batch</span>
 					</div>
 					<div class="text-3xl font-extrabold text-indigo-400 font-display">
@@ -387,7 +415,10 @@
 				<!-- Card 3: Seal Integrity -->
 				<div class="p-5 rounded-2xl bg-[#0c0c16]/90 border border-white/[0.08] backdrop-blur-xl shadow-lg relative overflow-hidden">
 					<div class="flex items-center justify-between text-xs text-[#8e8ea0] mb-2 font-display">
-						<span>Seal Integrity Rate</span>
+						<div class="flex items-center gap-1.5">
+							<ShieldCheck size={14} class={brokenSeals === 0 ? 'text-emerald-400' : 'text-amber-400'} />
+							<span>Seal Integrity Rate</span>
+						</div>
 						<span class="font-mono-tight text-[10px] {brokenSeals === 0 ? 'text-emerald-400' : 'text-amber-400'}">
 							{brokenSeals === 0 ? 'Zero Breaches' : `${brokenSeals} Opened`}
 						</span>
@@ -403,7 +434,10 @@
 				<!-- Card 4: Smart Contract Status -->
 				<div class="p-5 rounded-2xl bg-[#0c0c16]/90 border border-white/[0.08] backdrop-blur-xl shadow-lg relative overflow-hidden">
 					<div class="flex items-center justify-between text-xs text-[#8e8ea0] mb-2 font-display">
-						<span>Contract Authority</span>
+						<div class="flex items-center gap-1.5">
+							<Activity size={14} class="text-accent" />
+							<span>Contract Authority</span>
+						</div>
 						<span class="text-accent font-mono-tight text-[10px]">Active</span>
 					</div>
 					<div class="text-sm font-bold text-white font-mono-tight mt-1 truncate">
@@ -417,7 +451,7 @@
 							class="hover:underline flex items-center gap-1"
 						>
 							<span>View on Sepolia Etherscan</span>
-							<span>↗</span>
+							<ExternalLink size={12} />
 						</a>
 					</div>
 				</div>
@@ -433,28 +467,31 @@
 						placeholder="Search by product, lot number, or transaction hash..."
 						class="w-full pl-9 pr-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.08] hover:border-white/[0.15] text-xs text-white placeholder-[#606074] focus:outline-none focus:border-accent transition-all"
 					/>
-					<span class="absolute left-3 top-3 text-[#606074] text-xs">🔍</span>
+					<Search size={14} class="absolute left-3 top-3 text-[#606074]" />
 				</div>
 
 				<!-- View tabs -->
 				<div class="flex items-center gap-1.5 p-1 rounded-xl bg-white/[0.03] border border-white/[0.08] text-xs font-display self-start sm:self-auto">
 					<button
 						onclick={() => (activeView = 'products')}
-						class="px-3.5 py-1.5 rounded-lg transition-all {activeView === 'products' ? 'bg-white text-[#08080e] font-bold shadow' : 'text-[#8e8ea0] hover:text-white'}"
+						class="px-3.5 py-1.5 rounded-lg transition-all flex items-center gap-1.5 {activeView === 'products' ? 'bg-white text-[#08080e] font-bold shadow' : 'text-[#8e8ea0] hover:text-white'}"
 					>
-						Products ({data.products.length})
+						<ClipboardList size={13} />
+						<span>Products ({data.products.length})</span>
 					</button>
 					<button
 						onclick={() => (activeView = 'batches')}
-						class="px-3.5 py-1.5 rounded-lg transition-all {activeView === 'batches' ? 'bg-white text-[#08080e] font-bold shadow' : 'text-[#8e8ea0] hover:text-white'}"
+						class="px-3.5 py-1.5 rounded-lg transition-all flex items-center gap-1.5 {activeView === 'batches' ? 'bg-white text-[#08080e] font-bold shadow' : 'text-[#8e8ea0] hover:text-white'}"
 					>
-						Batches ({data.batches?.length || 0})
+						<Boxes size={13} />
+						<span>Batches ({data.batches?.length || 0})</span>
 					</button>
 					<button
 						onclick={() => (activeView = 'alerts')}
-						class="px-3.5 py-1.5 rounded-lg transition-all {activeView === 'alerts' ? 'bg-amber-400 text-[#08080e] font-bold shadow' : 'text-[#8e8ea0] hover:text-white'}"
+						class="px-3.5 py-1.5 rounded-lg transition-all flex items-center gap-1.5 {activeView === 'alerts' ? 'bg-amber-400 text-[#08080e] font-bold shadow' : 'text-[#8e8ea0] hover:text-white'}"
 					>
-						Breaches ({brokenSeals})
+						<ShieldAlert size={13} />
+						<span>Breaches ({brokenSeals})</span>
 					</button>
 				</div>
 			</div>
@@ -527,10 +564,15 @@
 											<td class="px-5 py-3.5 font-mono-tight text-[#8e8ea0]">
 												<button
 													onclick={() => copyToClipboard(product.id, product.id)}
-													class="hover:text-white transition-colors"
+													class="hover:text-white transition-colors flex items-center gap-1"
 													title="Click to copy ID"
 												>
-													{copiedId === product.id ? '✓ Copied' : truncate(product.id, 8, 4)}
+													<span>{truncate(product.id, 8, 4)}</span>
+													{#if copiedId === product.id}
+														<Check size={11} class="text-emerald-400" />
+													{:else}
+														<Copy size={11} class="text-[#606074]" />
+													{/if}
 												</button>
 											</td>
 											<td class="px-5 py-3.5">
@@ -547,7 +589,7 @@
 														class="text-accent hover:underline flex items-center gap-1"
 													>
 														<span>{truncate(product.blockchainTxHash, 6, 4)}</span>
-														<span>↗</span>
+														<ExternalLink size={10} />
 													</a>
 												{:else}
 													<span class="text-[#606074]">—</span>
@@ -556,9 +598,10 @@
 											<td class="px-5 py-3.5 text-right">
 												<a
 													href="/verify/{product.id}"
-													class="px-3 py-1 rounded-full bg-white/10 hover:bg-white/20 text-white font-display text-xs transition-all inline-block"
+													class="px-3 py-1 rounded-full bg-white/10 hover:bg-white/20 text-white font-display text-xs transition-all inline-flex items-center gap-1"
 												>
-													Verify Proof →
+													<span>Verify Proof</span>
+													<ArrowRight size={11} />
 												</a>
 											</td>
 										</tr>
@@ -581,9 +624,10 @@
 						</div>
 						<a
 							href="/register"
-							class="px-3 py-1.5 rounded-full bg-white text-[#08080e] hover:bg-white/90 text-xs font-bold font-display"
+							class="px-3 py-1.5 rounded-full bg-white text-[#08080e] hover:bg-white/90 text-xs font-bold font-display flex items-center gap-1"
 						>
-							+ Mint New Batch
+							<Plus size={13} />
+							<span>Mint New Batch</span>
 						</a>
 					</div>
 
@@ -620,10 +664,15 @@
 											<td class="px-5 py-3.5 font-mono-tight text-[#8e8ea0]">
 												<button
 													onclick={() => copyToClipboard(batch.merkleRoot, batch.id)}
-													class="hover:text-white transition-colors"
+													class="hover:text-white transition-colors flex items-center gap-1"
 													title="Copy Merkle Root"
 												>
-													{copiedId === batch.id ? '✓ Copied' : truncate(batch.merkleRoot, 8, 6)}
+													<span>{truncate(batch.merkleRoot, 8, 6)}</span>
+													{#if copiedId === batch.id}
+														<Check size={11} class="text-emerald-400" />
+													{:else}
+														<Copy size={11} class="text-[#606074]" />
+													{/if}
 												</button>
 											</td>
 											<td class="px-5 py-3.5 font-mono-tight">
@@ -635,7 +684,7 @@
 														class="text-accent hover:underline flex items-center gap-1"
 													>
 														<span>{truncate(batch.blockchainTxHash, 6, 4)}</span>
-														<span>↗</span>
+														<ExternalLink size={10} />
 													</a>
 												{:else}
 													<span class="text-[#606074]">—</span>
@@ -660,7 +709,7 @@
 					<div class="p-5 border-b border-white/[0.06] flex items-center justify-between">
 						<div>
 							<h2 class="text-sm font-bold text-amber-300 font-display flex items-center gap-2">
-								<span>⚠️</span>
+								<ShieldAlert size={16} class="text-amber-400" />
 								<span>Physical Tamper-Evident Seal Breaches</span>
 							</h2>
 							<p class="text-xs text-[#8e8ea0] mt-0.5">Products whose physical tear seals have been broken in the field</p>
@@ -672,8 +721,10 @@
 
 					{#if tamperedProducts.length === 0}
 						<div class="p-12 text-center text-xs text-[#8e8ea0]">
-							<div class="text-2xl mb-2">🛡️</div>
-							<div class="text-white font-bold font-display">Zero Physical Breaches Detected</div>
+							<div class="w-10 h-10 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto mb-3">
+								<ShieldCheck size={22} />
+							</div>
+							<div class="text-white font-bold font-display text-sm">Zero Physical Breaches Detected</div>
 							<div class="mt-1">All {totalUnits} registered product seals remain intact and unopened.</div>
 						</div>
 					{:else}
@@ -706,9 +757,10 @@
 											<td class="px-5 py-3.5 text-right">
 												<a
 													href="/verify/{item.id}"
-													class="px-3 py-1 rounded-full bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 font-display text-xs transition-all"
+													class="px-3 py-1 rounded-full bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 font-display text-xs transition-all inline-flex items-center gap-1"
 												>
-													View Telemetry →
+													<span>View Telemetry</span>
+													<ArrowRight size={11} />
 												</a>
 											</td>
 										</tr>

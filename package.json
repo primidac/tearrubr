@@ -34,10 +34,12 @@
 		"vite": "^8.0.16"
 	},
 	"dependencies": {
+		"@lucide/svelte": "^1.45.0",
 		"@privy-io/js-sdk-core": "^0.75.0",
 		"better-sqlite3": "^13.0.3",
 		"drizzle-orm": "^0.45.2",
 		"ethers": "^6.17.0",
+		"lucide-svelte": "^1.0.1",
 		"uuid": "^14.0.2"
 	}
 }
