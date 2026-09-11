@@ -1,5 +1,5 @@
 import { db } from '$lib/server/db';
-import { products } from '$lib/server/schema';
+import { products, batches } from '$lib/server/schema';
 import { desc } from 'drizzle-orm';
 import { CONTRACT_ADDRESS, EXPLORER_BASE_URL } from '$lib/server/blockchain';
 
@@ -10,8 +10,14 @@ export async function load({ url }) {
             .from(products)
             .orderBy(desc(products.createdAt));
 
+        const allBatches = await db
+            .select()
+            .from(batches)
+            .orderBy(desc(batches.createdAt));
+
         return {
             products: allProducts,
+            batches: allBatches,
             contractAddress: CONTRACT_ADDRESS,
             explorerBaseUrl: EXPLORER_BASE_URL,
             network: 'Ethereum Sepolia',
@@ -21,6 +27,7 @@ export async function load({ url }) {
         console.error('Error fetching public ledger products:', error);
         return {
             products: [],
+            batches: [],
             contractAddress: CONTRACT_ADDRESS,
             explorerBaseUrl: EXPLORER_BASE_URL,
             network: 'Ethereum Sepolia',

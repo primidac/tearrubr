@@ -1,475 +1,438 @@
 <script lang="ts">
-    import { fly, fade } from 'svelte/transition';
-    import { goto } from '$app/navigation';
-    import Logo from '$lib/components/Logo.svelte';
+	import { fly, fade } from 'svelte/transition';
+	import { goto } from '$app/navigation';
+	import Navbar from '$lib/components/Navbar.svelte';
+	import { auth, VERIFIED_MANUFACTURERS } from '$lib/auth.svelte';
 
-    let activeTab = $state<'single' | 'batch'>('batch');
+	let activeTab = $state<'batch' | 'single'>('batch');
 
-    // Single item state
-    let manufacturer = $state('');
-    let name = $state('');
-    let description = $state('');
+	// Single item state
+	let manufacturer = $state('');
+	let name = $state('');
+	let description = $state('');
 
-    // Batch state
-    let batchManufacturer = $state('The Coca-Cola Company');
-    let batchProductName = $state('Coca-Cola Original Taste 500ml');
-    let batchNumber = $state('LOT-2026-ATL-09');
-    let batchQuantity = $state(25);
-    let batchFacility = $state('Atlanta Bottling Plant #4, Line 2');
+	// Batch state
+	let batchManufacturer = $state(auth.session.brandName || 'The Coca-Cola Company');
+	let batchProductName = $state('Coca-Cola Original Taste 500ml');
+	let batchNumber = $state('LOT-2026-ATL-09');
+	let batchDescription = $state('Atlanta Bottling Plant #4, Line 2');
+	let batchQuantity = $state(25);
 
-    let isSubmitting = $state(false);
-    let error = $state('');
+	// Update default manufacturer when auth session changes
+	$effect(() => {
+		if (auth.session.brandName) {
+			batchManufacturer = auth.session.brandName;
+			if (!manufacturer) manufacturer = auth.session.brandName;
+		}
+	});
 
-    // Batch result modal/view state
-    let batchResult = $state<{
-        batchId: string;
-        batchNumber: string;
-        manufacturer: string;
-        productName: string;
-        quantity: number;
-        merkleRoot: string;
-        blockchainTxHash: string | null;
-        csvManifest: string;
-    } | null>(null);
+	let isSubmitting = $state(false);
+	let error = $state<string | null>(null);
 
-    function autoBatchNumber() {
-        const year = new Date().getFullYear();
-        const rand = Math.floor(1000 + Math.random() * 9000);
-        batchNumber = `LOT-${year}-RUN-${rand}`;
-    }
+	// Batch submission result
+	let batchResult = $state<{
+		success: boolean;
+		batchId: string;
+		batchNumber: string;
+		productName: string;
+		manufacturer: string;
+		quantity: number;
+		merkleRoot: string;
+		blockchainTxHash: string;
+		csvManifest: string;
+		downloadUrl: string;
+	} | null>(null);
 
-    async function registerSingleProduct() {
-        if (!manufacturer.trim() || !name.trim()) {
-            error = 'Manufacturer and Product Name are required.';
-            return;
-        }
+	// Anti-spoofing check
+	let currentBrandCheck = $derived(
+		activeTab === 'batch'
+			? auth.checkBrandAuthority(batchManufacturer)
+			: auth.checkBrandAuthority(manufacturer)
+	);
 
-        isSubmitting = true;
-        error = '';
+	async function handleBatchSubmit(e: Event) {
+		e.preventDefault();
+		isSubmitting = true;
+		error = null;
+		batchResult = null;
 
-        try {
-            const res = await fetch('/api/products', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    manufacturer: manufacturer.trim(),
-                    name: name.trim(),
-                    description: description.trim() || null
-                })
-            });
+		try {
+			const res = await fetch('/api/batches', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					batchNumber: batchNumber.trim(),
+					productName: batchProductName.trim(),
+					manufacturer: batchManufacturer.trim(),
+					description: batchDescription.trim(),
+					quantity: Number(batchQuantity)
+				})
+			});
 
-            if (res.ok) {
-                goto('/dashboard');
-            } else {
-                const errData = await res.json();
-                error = errData.error || 'Failed to register product.';
-            }
-        } catch (err) {
-            error = 'Network error. Please try again.';
-        } finally {
-            isSubmitting = false;
-        }
-    }
+			const data = await res.json();
+			if (!res.ok) throw new Error(data.message || 'Failed to commit batch');
 
-    async function registerBatchRun() {
-        if (!batchManufacturer.trim() || !batchProductName.trim() || !batchNumber.trim() || !batchQuantity) {
-            error = 'All batch fields are required.';
-            return;
-        }
+			batchResult = data;
+		} catch (err: any) {
+			error = err.message || 'Failed to submit batch to Sepolia';
+		} finally {
+			isSubmitting = false;
+		}
+	}
 
-        isSubmitting = true;
-        error = '';
+	async function handleSingleSubmit(e: Event) {
+		e.preventDefault();
+		isSubmitting = true;
+		error = null;
 
-        try {
-            const res = await fetch('/api/batches', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    manufacturer: batchManufacturer.trim(),
-                    productName: batchProductName.trim(),
-                    batchNumber: batchNumber.trim(),
-                    quantity: batchQuantity,
-                    description: batchFacility.trim() || null
-                })
-            });
+		try {
+			const res = await fetch('/api/products', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					manufacturer: manufacturer.trim(),
+					name: name.trim(),
+					description: description.trim()
+				})
+			});
 
-            const data = await res.json();
-            if (res.ok && data.success) {
-                batchResult = data;
-            } else {
-                error = data.error || 'Failed to register batch.';
-            }
-        } catch (err) {
-            error = 'Network error connecting to batch server.';
-        } finally {
-            isSubmitting = false;
-        }
-    }
+			const data = await res.json();
+			if (!res.ok) throw new Error(data.message || 'Failed to register product');
 
-    function downloadCsvManifest() {
-        if (!batchResult?.csvManifest) return;
-        const blob = new Blob([batchResult.csvManifest], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.setAttribute('download', `TearRubr_${batchResult.batchNumber}_Manifest.csv`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    }
+			goto(`/verify/${data.product.id}`);
+		} catch (err: any) {
+			error = err.message || 'Failed to register product';
+		} finally {
+			isSubmitting = false;
+		}
+	}
+
+	function downloadManifest() {
+		if (!batchResult?.csvManifest) return;
+		const blob = new Blob([batchResult.csvManifest], { type: 'text/csv;charset=utf-8;' });
+		const url = URL.createObjectURL(blob);
+		const link = document.createElement('a');
+		link.setAttribute('href', url);
+		link.setAttribute('download', `TearRubr_${batchResult.batchNumber}_Manifest.csv`);
+		document.body.appendChild(link);
+		link.click();
+		document.body.removeChild(link);
+	}
 </script>
 
 <svelte:head>
-    <title>Register Products | TearRubr Portal</title>
-    <meta name="description" content="Register single products or high-volume industrial batches on the TearRubr public blockchain." />
+	<title>Manufacturer Portal | TearRubr</title>
+	<meta
+		name="description"
+		content="Register single products or high-volume industrial batches on Ethereum Sepolia with cryptographic Merkle proof rollups."
+	/>
 </svelte:head>
 
-<div class="min-h-screen bg-[#08080e] text-text-primary">
-    <!-- Top bar -->
-    <nav class="border-b border-border bg-[#08080e]">
-        <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-            <div class="flex items-center gap-6">
-                <a href="/" class="flex items-center gap-2.5">
-                    <Logo size={28} />
-                    <span class="text-lg font-bold tracking-tight text-text-primary">TearRubr</span>
-                </a>
-                <div class="h-5 w-px bg-border"></div>
-                <span class="text-sm text-text-tertiary">Manufacturer Registration</span>
-            </div>
-            <div class="flex items-center gap-4">
-                <a href="/verify" class="text-sm text-text-secondary hover:text-text-primary transition-colors">Public Ledger</a>
-                <a href="/dashboard" class="text-sm text-text-secondary hover:text-text-primary transition-colors">← Dashboard</a>
-            </div>
-        </div>
-    </nav>
+<div class="min-h-screen bg-[#08080e] text-text-primary selection:bg-indigo-500/20 pb-32">
+	<!-- Floating Pill Dock Navigation -->
+	<Navbar currentPath="/register" />
 
-    <div class="flex justify-center px-6 py-12">
-        <div in:fly={{ y: 12, duration: 400 }} class="w-full max-w-xl">
-            
-            {#if batchResult}
-                <!-- Batch Registration Success View -->
-                <div class="border border-success/20 rounded-2xl bg-surface-raised overflow-hidden p-8 shadow-2xl">
-                    <div class="flex items-center gap-3 mb-6">
-                        <div class="w-10 h-10 rounded-full bg-success/20 flex items-center justify-center text-success">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                            </svg>
-                        </div>
-                        <div>
-                            <span class="text-xs font-semibold uppercase tracking-wider text-success">Batch Confirmed</span>
-                            <h2 class="text-xl font-bold text-text-primary">{batchResult.quantity} Units Minted On-Chain</h2>
-                        </div>
-                    </div>
+	<!-- Atmospheric Blooms (Sahara AI aesthetic) -->
+	<div class="fixed inset-0 pointer-events-none overflow-hidden select-none z-0">
+		<div class="absolute top-10 right-10 w-[550px] h-[550px] rounded-full bg-[#6366f1]/15 blur-[140px]"></div>
+		<div class="absolute bottom-20 left-10 w-[550px] h-[550px] rounded-full bg-[#10b981]/15 blur-[140px]"></div>
+	</div>
 
-                    <p class="text-sm text-text-secondary mb-6 leading-relaxed">
-                        The entire production batch was committed to the Ethereum Sepolia smart contract in <strong>a single cryptographic transaction</strong>. All bottle serials are secured by the Merkle root below.
-                    </p>
+	<!-- Main Container -->
+	<main class="max-w-4xl mx-auto px-4 sm:px-6 pt-32 sm:pt-40 relative z-10">
+		<!-- Header -->
+		<div class="text-center mb-10">
+			<span class="text-xs font-mono-tight text-accent font-semibold tracking-wider uppercase">
+				Manufacturer Portal · Sepolia
+			</span>
+			<h1 class="text-3xl sm:text-5xl font-extrabold tracking-tight text-white font-display mt-2">
+				Register on the Public Ledger
+			</h1>
+			<p class="text-xs sm:text-sm text-[#9494a8] mt-3 max-w-lg mx-auto leading-relaxed">
+				Issue tamper-evident cryptographic identities for single items or industrial batches of up to 10,000 units in a single transaction.
+			</p>
+		</div>
 
-                    <div class="space-y-3 bg-surface p-4 rounded-xl border border-border text-xs font-mono-tight mb-8">
-                        <div class="flex justify-between py-1 border-b border-border">
-                            <span class="text-text-tertiary">Batch / Lot #</span>
-                            <span class="text-text-primary font-bold">{batchResult.batchNumber}</span>
-                        </div>
-                        <div class="flex justify-between py-1 border-b border-border">
-                            <span class="text-text-tertiary">Product</span>
-                            <span class="text-text-primary">{batchResult.productName}</span>
-                        </div>
-                        <div class="flex justify-between py-1 border-b border-border">
-                            <span class="text-text-tertiary">Quantity</span>
-                            <span class="text-accent font-bold">{batchResult.quantity} units</span>
-                        </div>
-                        <div class="flex justify-between py-1 border-b border-border">
-                            <span class="text-text-tertiary">Merkle Root</span>
-                            <span class="text-accent break-all">{batchResult.merkleRoot}</span>
-                        </div>
-                        {#if batchResult.blockchainTxHash}
-                            <div class="flex justify-between py-1">
-                                <span class="text-text-tertiary">On-Chain Tx</span>
-                                <a 
-                                    href="https://sepolia.etherscan.io/tx/{batchResult.blockchainTxHash}" 
-                                    target="_blank" 
-                                    rel="noopener noreferrer"
-                                    class="text-accent hover:underline flex items-center gap-1"
-                                >
-                                    {batchResult.blockchainTxHash.slice(0, 10)}…{batchResult.blockchainTxHash.slice(-8)}
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                                    </svg>
-                                </a>
-                            </div>
-                        {/if}
-                    </div>
+		<!-- Identity & Anti-Spoofing Banner -->
+		<div class="mb-8 p-4 rounded-2xl bg-white/[0.03] border border-white/[0.08] backdrop-blur-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+			<div class="flex items-center gap-3">
+				<div class="w-9 h-9 rounded-xl {auth.session.isVerifiedManufacturer ? 'bg-emerald-500/20 text-emerald-400' : 'bg-indigo-500/20 text-indigo-400'} flex items-center justify-center font-bold text-sm">
+					{auth.session.isVerifiedManufacturer ? '✓' : 'ID'}
+				</div>
+				<div>
+					<div class="flex items-center gap-2">
+						<span class="text-xs font-bold text-white font-mono-tight">
+							{auth.session.ensName || auth.session.walletAddress || 'Unconnected Session'}
+						</span>
+						{#if auth.session.isVerifiedManufacturer}
+							<span class="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] font-mono-tight">
+								✓ {auth.session.tier} Verified
+							</span>
+						{:else}
+							<span class="px-2 py-0.5 rounded-full bg-white/10 text-[#8e8ea0] text-[10px] font-mono-tight">
+								Community Issuer
+							</span>
+						{/if}
+					</div>
+					<div class="text-[11px] text-[#7a7a8e] mt-0.5">
+						Issuing on behalf of: <strong class="text-white">{auth.session.brandName || 'Custom Brand'}</strong>
+					</div>
+				</div>
+			</div>
 
-                    <div class="space-y-3">
-                        <button 
-                            type="button" 
-                            onclick={downloadCsvManifest}
-                            class="w-full py-3.5 px-4 rounded-xl bg-accent hover:bg-accent-muted text-white font-semibold text-sm flex items-center justify-center gap-2 glow-accent transition-all"
-                        >
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                            </svg>
-                            Download Factory Print Manifest (CSV)
-                        </button>
+			<button
+				onclick={() => auth.openModal()}
+				class="px-3.5 py-1.5 rounded-full bg-white/10 hover:bg-white/15 text-xs text-white transition-colors font-display self-start sm:self-auto"
+			>
+				Switch Brand (ENS) →
+			</button>
+		</div>
 
-                        <div class="grid grid-cols-2 gap-3 pt-2">
-                            <a 
-                                href="/verify?q={batchResult.batchNumber}" 
-                                class="py-2.5 px-3 rounded-lg border border-border hover:border-text-tertiary text-text-secondary hover:text-text-primary text-xs font-medium text-center transition-all"
-                            >
-                                View in Public Ledger →
-                            </a>
-                            <a 
-                                href="/dashboard" 
-                                class="py-2.5 px-3 rounded-lg border border-border hover:border-text-tertiary text-text-secondary hover:text-text-primary text-xs font-medium text-center transition-all"
-                            >
-                                Go to Dashboard →
-                            </a>
-                        </div>
-                    </div>
-                </div>
+		<!-- Anti-Spoofing Warning if Claiming Unauthorized Brand -->
+		{#if !currentBrandCheck.isAuthorized}
+			<div class="mb-8 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs flex items-start gap-3" transition:fade>
+				<span class="text-base shrink-0">⚠️</span>
+				<div>
+					<h4 class="font-bold font-display text-amber-300">Brand Attestation Warning</h4>
+					<p class="mt-0.5 leading-relaxed text-[#c0c0d4]">
+						{currentBrandCheck.reason} To issue verified products for this brand, please connect using the corresponding ENS key.
+					</p>
+					<button
+						onclick={() => auth.openModal()}
+						class="mt-2 text-xs font-semibold text-amber-300 hover:underline"
+					>
+						Switch to verified ENS identity in Privy modal →
+					</button>
+				</div>
+			</div>
+		{/if}
 
-            {:else}
-                <!-- Registration Tabs Header -->
-                <div class="mb-6 text-center">
-                    <h1 class="text-2xl font-extrabold tracking-tight text-text-primary">Manufacturer Portal</h1>
-                    <p class="text-sm text-text-tertiary mt-1">Register products or industrial high-volume batches with cryptographic proof.</p>
-                </div>
+		<!-- Tab Switcher -->
+		<div class="flex justify-center mb-8">
+			<div class="p-1 rounded-full bg-[#0c0c16] border border-white/[0.08] flex items-center gap-1 text-xs">
+				<button
+					onclick={() => {
+						activeTab = 'batch';
+						error = null;
+					}}
+					class="px-5 py-2 rounded-full font-medium transition-all font-display {activeTab === 'batch' ? 'bg-white text-[#08080e] shadow-md' : 'text-[#8e8ea0] hover:text-white'}"
+				>
+					Industrial Batch Rollup (Recommended)
+				</button>
+				<button
+					onclick={() => {
+						activeTab = 'single';
+						error = null;
+					}}
+					class="px-5 py-2 rounded-full font-medium transition-all font-display {activeTab === 'single' ? 'bg-white text-[#08080e] shadow-md' : 'text-[#8e8ea0] hover:text-white'}"
+				>
+					Single Item Registration
+				</button>
+			</div>
+		</div>
 
-                <!-- Tab Toggle -->
-                <div class="grid grid-cols-2 p-1 bg-surface border border-border rounded-xl mb-8">
-                    <button 
-                        type="button" 
-                        onclick={() => { activeTab = 'batch'; error = ''; }}
-                        class="py-2.5 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-2 {activeTab === 'batch' ? 'bg-surface-raised text-text-primary border border-border shadow-sm' : 'text-text-tertiary hover:text-text-primary'}"
-                    >
-                        <span class="w-2 h-2 rounded-full {activeTab === 'batch' ? 'bg-accent' : 'bg-transparent'}"></span>
-                        Batch Production Run (FMCG)
-                    </button>
-                    <button 
-                        type="button" 
-                        onclick={() => { activeTab = 'single'; error = ''; }}
-                        class="py-2.5 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-2 {activeTab === 'single' ? 'bg-surface-raised text-text-primary border border-border shadow-sm' : 'text-text-tertiary hover:text-text-primary'}"
-                    >
-                        <span class="w-2 h-2 rounded-full {activeTab === 'single' ? 'bg-accent' : 'bg-transparent'}"></span>
-                        Single Item (Luxury / Serialized)
-                    </button>
-                </div>
+		<!-- Form Card -->
+		<div class="rounded-3xl bg-[#0c0c16]/80 border border-white/[0.08] p-6 sm:p-8 backdrop-blur-2xl shadow-2xl">
+			{#if error}
+				<div class="mb-6 p-4 rounded-2xl bg-danger/10 border border-danger/30 text-red-200 text-xs">
+					{error}
+				</div>
+			{/if}
 
-                {#if error}
-                    <div in:fade={{ duration: 200 }} class="mb-6 px-4 py-3 rounded-lg bg-danger/10 border border-danger/20 text-danger text-sm flex items-center gap-2.5">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 shrink-0" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
-                        </svg>
-                        {error}
-                    </div>
-                {/if}
+			{#if activeTab === 'batch'}
+				<!-- Batch Rollup Form -->
+				<form onsubmit={handleBatchSubmit} class="space-y-6">
+					<div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+						<div>
+							<label for="batch-mfg" class="block text-xs font-medium text-[#c0c0d4] mb-2 font-display">
+								Manufacturer / Brand Name
+							</label>
+							<input
+								id="batch-mfg"
+								type="text"
+								bind:value={batchManufacturer}
+								required
+								class="w-full px-4 py-3 rounded-2xl bg-[#08080e] border border-white/10 text-xs sm:text-sm text-white focus:outline-none focus:border-accent transition-all"
+								placeholder="e.g. The Coca-Cola Company"
+							/>
+						</div>
 
-                {#if activeTab === 'batch'}
-                    <!-- BATCH PRODUCTION FORM -->
-                    <div class="bg-surface-raised border border-border rounded-2xl p-6 sm:p-8">
-                        <div class="flex items-center justify-between pb-4 mb-6 border-b border-border">
-                            <div>
-                                <h2 class="text-base font-bold text-text-primary">Batch Production Run</h2>
-                                <p class="text-xs text-text-tertiary">Cryptographic Merkle rollup · 1 Sepolia transaction</p>
-                            </div>
-                            <span class="text-[11px] font-mono-tight px-2.5 py-1 rounded bg-surface border border-border text-accent">
-                                High-Volume Mode
-                            </span>
-                        </div>
+						<div>
+							<label for="batch-name" class="block text-xs font-medium text-[#c0c0d4] mb-2 font-display">
+								Product Name
+							</label>
+							<input
+								id="batch-name"
+								type="text"
+								bind:value={batchProductName}
+								required
+								class="w-full px-4 py-3 rounded-2xl bg-[#08080e] border border-white/10 text-xs sm:text-sm text-white focus:outline-none focus:border-accent transition-all"
+								placeholder="e.g. Coca-Cola Original Taste 500ml"
+							/>
+						</div>
+					</div>
 
-                        <form onsubmit={(e) => { e.preventDefault(); registerBatchRun(); }} class="space-y-5">
-                            <div>
-                                <label for="batchManufacturer" class="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1.5">Manufacturer</label>
-                                <input 
-                                    type="text" 
-                                    id="batchManufacturer"
-                                    bind:value={batchManufacturer}
-                                    disabled={isSubmitting}
-                                    class="w-full px-3.5 py-2.5 bg-surface border border-border rounded-lg text-sm text-text-primary placeholder-text-tertiary outline-none focus:border-accent focus:ring-1 focus:ring-accent/30 transition-all disabled:opacity-50"
-                                    placeholder="e.g. The Coca-Cola Company"
-                                />
-                            </div>
+					<div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+						<div>
+							<label for="batch-lot" class="block text-xs font-medium text-[#c0c0d4] mb-2 font-display">
+								Production Batch LOT #
+							</label>
+							<input
+								id="batch-lot"
+								type="text"
+								bind:value={batchNumber}
+								required
+								class="w-full px-4 py-3 rounded-2xl bg-[#08080e] border border-white/10 text-xs sm:text-sm text-white font-mono-tight focus:outline-none focus:border-accent transition-all"
+								placeholder="e.g. LOT-2026-ATL-09"
+							/>
+						</div>
 
-                            <div>
-                                <label for="batchProductName" class="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1.5">Product Name</label>
-                                <input 
-                                    type="text" 
-                                    id="batchProductName"
-                                    bind:value={batchProductName}
-                                    disabled={isSubmitting}
-                                    class="w-full px-3.5 py-2.5 bg-surface border border-border rounded-lg text-sm text-text-primary placeholder-text-tertiary outline-none focus:border-accent focus:ring-1 focus:ring-accent/30 transition-all disabled:opacity-50"
-                                    placeholder="e.g. Coca-Cola Original Taste 500ml"
-                                />
-                            </div>
+						<div>
+							<label for="batch-qty" class="block text-xs font-medium text-[#c0c0d4] mb-2 font-display">
+								Batch Quantity (Units to Mint)
+							</label>
+							<input
+								id="batch-qty"
+								type="number"
+								bind:value={batchQuantity}
+								min="1"
+								max="10000"
+								required
+								class="w-full px-4 py-3 rounded-2xl bg-[#08080e] border border-white/10 text-xs sm:text-sm text-white font-mono-tight focus:outline-none focus:border-accent transition-all"
+							/>
+							<span class="text-[11px] text-[#7a7a8e] mt-1 block">
+								All {batchQuantity} units compressed into 1 single Ethereum transaction
+							</span>
+						</div>
+					</div>
 
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div>
-                                    <div class="flex items-center justify-between mb-1.5">
-                                        <label for="batchNumber" class="block text-xs font-semibold text-text-secondary uppercase tracking-wider">Lot / Batch Number</label>
-                                        <button 
-                                            type="button" 
-                                            onclick={autoBatchNumber}
-                                            class="text-[10px] text-accent hover:underline font-mono-tight"
-                                        >
-                                            Generate
-                                        </button>
-                                    </div>
-                                    <input 
-                                        type="text" 
-                                        id="batchNumber"
-                                        bind:value={batchNumber}
-                                        disabled={isSubmitting}
-                                        class="w-full px-3.5 py-2.5 bg-surface border border-border rounded-lg text-sm text-text-primary font-mono-tight placeholder-text-tertiary outline-none focus:border-accent focus:ring-1 focus:ring-accent/30 transition-all disabled:opacity-50"
-                                        placeholder="e.g. LOT-2026-ATL-09"
-                                    />
-                                </div>
+					<div>
+						<label for="batch-desc" class="block text-xs font-medium text-[#c0c0d4] mb-2 font-display">
+							Production Details & Facility
+						</label>
+						<textarea
+							id="batch-desc"
+							bind:value={batchDescription}
+							rows="2"
+							class="w-full px-4 py-3 rounded-2xl bg-[#08080e] border border-white/10 text-xs sm:text-sm text-white focus:outline-none focus:border-accent transition-all"
+							placeholder="Facility, line, and expiry notes..."
+						></textarea>
+					</div>
 
-                                <div>
-                                    <label for="batchQuantity" class="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1.5">Run Size (Units)</label>
-                                    <input 
-                                        type="number" 
-                                        id="batchQuantity"
-                                        min="1"
-                                        max="1000"
-                                        bind:value={batchQuantity}
-                                        disabled={isSubmitting}
-                                        class="w-full px-3.5 py-2.5 bg-surface border border-border rounded-lg text-sm text-text-primary font-mono-tight placeholder-text-tertiary outline-none focus:border-accent focus:ring-1 focus:ring-accent/30 transition-all disabled:opacity-50"
-                                    />
-                                </div>
-                            </div>
+					<button
+						type="submit"
+						disabled={isSubmitting}
+						class="w-full py-3.5 rounded-full bg-white text-[#08080e] hover:bg-white/90 font-bold text-sm font-display transition-all shadow-xl hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50"
+					>
+						{isSubmitting ? 'Computing Merkle Tree & Broadcasting to Sepolia...' : 'Commit Batch to Ethereum Sepolia (1 Tx)'}
+					</button>
+				</form>
+			{:else}
+				<!-- Single Item Form -->
+				<form onsubmit={handleSingleSubmit} class="space-y-6">
+					<div>
+						<label for="single-mfg" class="block text-xs font-medium text-[#c0c0d4] mb-2 font-display">
+							Manufacturer / Brand Name
+						</label>
+						<input
+							id="single-mfg"
+							type="text"
+							bind:value={manufacturer}
+							required
+							class="w-full px-4 py-3 rounded-2xl bg-[#08080e] border border-white/10 text-xs sm:text-sm text-white focus:outline-none focus:border-accent transition-all"
+							placeholder="e.g. Aura Horology"
+						/>
+					</div>
 
-                            <!-- Quick quantity presets -->
-                            <div class="flex items-center gap-2">
-                                <span class="text-xs text-text-tertiary">Presets:</span>
-                                {#each [10, 25, 50, 100, 250] as size}
-                                    <button 
-                                        type="button"
-                                        onclick={() => batchQuantity = size}
-                                        class="px-2.5 py-1 text-xs rounded border border-border hover:border-text-tertiary font-mono-tight text-text-secondary hover:text-text-primary {batchQuantity === size ? 'bg-accent/10 border-accent/40 text-accent font-bold' : 'bg-surface'}"
-                                    >
-                                        {size}
-                                    </button>
-                                {/each}
-                            </div>
+					<div>
+						<label for="single-name" class="block text-xs font-medium text-[#c0c0d4] mb-2 font-display">
+							Product Name
+						</label>
+						<input
+							id="single-name"
+							type="text"
+							bind:value={name}
+							required
+							class="w-full px-4 py-3 rounded-2xl bg-[#08080e] border border-white/10 text-xs sm:text-sm text-white focus:outline-none focus:border-accent transition-all"
+							placeholder="e.g. Aura Chronograph X"
+						/>
+					</div>
 
-                            <div>
-                                <label for="batchFacility" class="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1.5">
-                                    Bottling Plant / Line Notes
-                                </label>
-                                <input 
-                                    type="text" 
-                                    id="batchFacility"
-                                    bind:value={batchFacility}
-                                    disabled={isSubmitting}
-                                    class="w-full px-3.5 py-2.5 bg-surface border border-border rounded-lg text-sm text-text-primary placeholder-text-tertiary outline-none focus:border-accent focus:ring-1 focus:ring-accent/30 transition-all disabled:opacity-50"
-                                    placeholder="e.g. Atlanta Bottling Plant #4, Line 2"
-                                />
-                            </div>
+					<div>
+						<label for="single-desc" class="block text-xs font-medium text-[#c0c0d4] mb-2 font-display">
+							Product Description
+						</label>
+						<textarea
+							id="single-desc"
+							bind:value={description}
+							rows="3"
+							class="w-full px-4 py-3 rounded-2xl bg-[#08080e] border border-white/10 text-xs sm:text-sm text-white focus:outline-none focus:border-accent transition-all"
+							placeholder="Serial details, materials, origin..."
+						></textarea>
+					</div>
 
-                            <!-- Industrial preview callout -->
-                            <div class="p-3.5 rounded-xl bg-surface border border-border text-xs text-text-tertiary space-y-1">
-                                <div class="flex justify-between text-text-secondary font-medium">
-                                    <span>Serialization Scheme:</span>
-                                    <span class="font-mono-tight text-accent">{batchNumber}-0001 → {batchNumber}-{String(batchQuantity).padStart(4, '0')}</span>
-                                </div>
-                                <p>Generates {batchQuantity} unique digital identities and commits the Merkle Root on Ethereum Sepolia in 1 single transaction.</p>
-                            </div>
+					<button
+						type="submit"
+						disabled={isSubmitting}
+						class="w-full py-3.5 rounded-full bg-white text-[#08080e] hover:bg-white/90 font-bold text-sm font-display transition-all shadow-xl hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50"
+					>
+						{isSubmitting ? 'Signing Transaction on Ethereum...' : 'Register Single Product on Sepolia'}
+					</button>
+				</form>
+			{/if}
+		</div>
 
-                            <button 
-                                type="submit" 
-                                disabled={isSubmitting}
-                                class="w-full px-4 py-3.5 font-semibold text-white text-sm rounded-lg bg-accent hover:bg-accent-muted glow-accent transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                {#if isSubmitting}
-                                    <span class="flex items-center justify-center gap-2">
-                                        <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                        </svg>
-                                        Minting Batch on Sepolia Testnet…
-                                    </span>
-                                {:else}
-                                    Register Batch ({batchQuantity} Units) On-Chain
-                                {/if}
-                            </button>
-                        </form>
-                    </div>
+		<!-- Batch Registration Success Card -->
+		{#if batchResult}
+			<div class="mt-8 p-6 sm:p-8 rounded-3xl bg-emerald-500/10 border border-emerald-500/30 backdrop-blur-2xl space-y-4" transition:fade>
+				<div class="flex items-center gap-3">
+					<div class="w-9 h-9 rounded-full bg-emerald-500/20 text-emerald-400 font-bold flex items-center justify-center">
+						✓
+					</div>
+					<div>
+						<h3 class="text-base font-bold text-white font-display">
+							Batch Successfully Committed to Ethereum Sepolia!
+						</h3>
+						<p class="text-xs text-[#8e8ea0]">
+							{batchResult.quantity} individual units rolled up under LOT {batchResult.batchNumber}
+						</p>
+					</div>
+				</div>
 
-                {:else}
-                    <!-- SINGLE ITEM FORM -->
-                    <div class="bg-surface-raised border border-border rounded-2xl p-6 sm:p-8">
-                        <div class="flex items-center justify-between pb-4 mb-6 border-b border-border">
-                            <div>
-                                <h2 class="text-base font-bold text-text-primary">Single Product Registration</h2>
-                                <p class="text-xs text-text-tertiary">Ideal for luxury watches, electronics, and bespoke goods</p>
-                            </div>
-                            <span class="text-[11px] font-mono-tight px-2.5 py-1 rounded bg-surface border border-border text-accent">
-                                1:1 Identity
-                            </span>
-                        </div>
+				<div class="p-4 rounded-2xl bg-[#08080e] border border-white/10 space-y-2 text-xs font-mono-tight">
+					<div>
+						<span class="text-[#7a7a8e]">Transaction Hash:</span>
+						<a
+							href="https://sepolia.etherscan.io/tx/{batchResult.blockchainTxHash}"
+							target="_blank"
+							rel="noopener noreferrer"
+							class="text-accent hover:underline ml-2 break-all"
+						>
+							{batchResult.blockchainTxHash} ↗
+						</a>
+					</div>
+					<div>
+						<span class="text-[#7a7a8e]">Merkle Root:</span>
+						<span class="text-white ml-2 break-all">{batchResult.merkleRoot}</span>
+					</div>
+				</div>
 
-                        <form onsubmit={(e) => { e.preventDefault(); registerSingleProduct(); }} class="space-y-5">
-                            <div>
-                                <label for="manufacturer" class="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1.5">Manufacturer</label>
-                                <input 
-                                    type="text" 
-                                    id="manufacturer"
-                                    bind:value={manufacturer}
-                                    disabled={isSubmitting}
-                                    class="w-full px-3.5 py-2.5 bg-surface border border-border rounded-lg text-sm text-text-primary placeholder-text-tertiary outline-none focus:border-accent focus:ring-1 focus:ring-accent/30 transition-all disabled:opacity-50"
-                                    placeholder="e.g. Acme Corp"
-                                />
-                            </div>
-
-                            <div>
-                                <label for="name" class="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1.5">Product Name</label>
-                                <input 
-                                    type="text" 
-                                    id="name"
-                                    bind:value={name}
-                                    disabled={isSubmitting}
-                                    class="w-full px-3.5 py-2.5 bg-surface border border-border rounded-lg text-sm text-text-primary placeholder-text-tertiary outline-none focus:border-accent focus:ring-1 focus:ring-accent/30 transition-all disabled:opacity-50"
-                                    placeholder="e.g. Precision Watch S1"
-                                />
-                            </div>
-
-                            <div>
-                                <label for="description" class="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1.5">
-                                    Description <span class="text-text-tertiary font-normal">(optional)</span>
-                                </label>
-                                <textarea 
-                                    id="description"
-                                    bind:value={description}
-                                    disabled={isSubmitting}
-                                    rows="3"
-                                    class="w-full px-3.5 py-2.5 bg-surface border border-border rounded-lg text-sm text-text-primary placeholder-text-tertiary outline-none focus:border-accent focus:ring-1 focus:ring-accent/30 transition-all resize-none disabled:opacity-50"
-                                    placeholder="Product details, serial number, batch, etc."
-                                ></textarea>
-                            </div>
-
-                            <button 
-                                type="submit" 
-                                disabled={isSubmitting}
-                                class="w-full px-4 py-3.5 font-semibold text-white text-sm rounded-lg bg-accent hover:bg-accent-muted glow-accent transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                {#if isSubmitting}
-                                    <span class="flex items-center justify-center gap-2">
-                                        <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                        </svg>
-                                        Recording on-chain (Sepolia)…
-                                    </span>
-                                {:else}
-                                    Register Product
-                                {/if}
-                            </button>
-                        </form>
-                    </div>
-                {/if}
-            {/if}
-
-        </div>
-    </div>
+				<!-- Download Factory Print Manifest Button -->
+				<div class="flex flex-col sm:flex-row gap-3 pt-2">
+					<button
+						onclick={downloadManifest}
+						class="px-6 py-3 rounded-full bg-emerald-500 hover:bg-emerald-400 text-[#08080e] font-bold text-xs font-display transition-all shadow-lg flex items-center justify-center gap-2"
+					>
+						<span>📥 Download Factory Print Manifest (CSV)</span>
+					</button>
+					<a
+						href="/verify"
+						class="px-6 py-3 rounded-full bg-white/10 hover:bg-white/15 text-white font-medium text-xs font-display transition-all flex items-center justify-center"
+					>
+						View on Public Ledger →
+					</a>
+				</div>
+			</div>
+		{/if}
+	</main>
 </div>

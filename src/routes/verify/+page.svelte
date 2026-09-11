@@ -1,402 +1,319 @@
 <script lang="ts">
-    import { fly, fade } from 'svelte/transition';
-    import { goto } from '$app/navigation';
-    import Logo from '$lib/components/Logo.svelte';
+	import { fly, fade } from 'svelte/transition';
+	import { goto } from '$app/navigation';
+	import Navbar from '$lib/components/Navbar.svelte';
+	import { auth, VERIFIED_MANUFACTURERS } from '$lib/auth.svelte';
 
-    let { data } = $props();
+	let { data } = $props();
 
-    let searchQuery = $state('');
-    let filterType = $state<'all' | 'batches' | 'single'>('all');
-    let copiedId = $state<string | null>(null);
+	let searchQuery = $state('');
+	let filterType = $state<'all' | 'verified' | 'batches' | 'single'>('all');
+	let copiedId = $state<string | null>(null);
 
-    $effect(() => {
-        if (data.initialQuery) {
-            searchQuery = data.initialQuery;
-        }
-    });
+	$effect(() => {
+		if (data.initialQuery) {
+			searchQuery = data.initialQuery;
+		}
+	});
 
-    let batchCount = $derived(data.products.filter(p => Boolean(p.batchNumber)).length);
-    let singleCount = $derived(data.products.filter(p => !p.batchNumber).length);
+	// Helper to check if a manufacturer is in our verified ENS registry
+	function getVerifiedInfo(manufacturerName: string) {
+		const norm = manufacturerName.toLowerCase();
+		if (norm.includes('coca') || norm.includes('coke')) {
+			return VERIFIED_MANUFACTURERS['cocacola.eth'];
+		}
+		if (norm.includes('louis') || norm.includes('vuitton') || norm.includes('lvmh')) {
+			return VERIFIED_MANUFACTURERS['lvmh.eth'];
+		}
+		if (norm.includes('apple')) {
+			return VERIFIED_MANUFACTURERS['apple.eth'];
+		}
+		if (norm.includes('aura')) {
+			return VERIFIED_MANUFACTURERS['aura.eth'];
+		}
+		return null;
+	}
 
-    let filteredProducts = $derived(
-        data.products.filter(p => {
-            // Type filter
-            if (filterType === 'batches' && !p.batchNumber) return false;
-            if (filterType === 'single' && p.batchNumber) return false;
+	let batchCount = $derived(data.products.filter((p) => Boolean(p.batchNumber)).length);
+	let singleCount = $derived(data.products.filter((p) => !p.batchNumber).length);
+	let verifiedCount = $derived(data.products.filter((p) => Boolean(getVerifiedInfo(p.manufacturer))).length);
 
-            // Search filter
-            if (!searchQuery.trim()) return true;
-            const q = searchQuery.toLowerCase().trim();
-            return (
-                p.name.toLowerCase().includes(q) ||
-                p.manufacturer.toLowerCase().includes(q) ||
-                p.id.toLowerCase().includes(q) ||
-                (p.batchNumber && p.batchNumber.toLowerCase().includes(q)) ||
-                (p.blockchainTxHash && p.blockchainTxHash.toLowerCase().includes(q)) ||
-                (p.description && p.description.toLowerCase().includes(q))
-            );
-        })
-    );
+	let filteredProducts = $derived(
+		data.products.filter((p) => {
+			const verifiedInfo = getVerifiedInfo(p.manufacturer);
 
-    function formatDate(timestamp: Date | number) {
-        const date = timestamp instanceof Date ? timestamp : new Date(Number(timestamp) * 1000);
-        return date.toLocaleDateString('en-US', {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
-    }
+			// Filter type
+			if (filterType === 'verified' && !verifiedInfo) return false;
+			if (filterType === 'batches' && !p.batchNumber) return false;
+			if (filterType === 'single' && p.batchNumber) return false;
 
-    function truncate(str: string, lead = 8, trail = 6) {
-        if (!str) return '';
-        if (str.length <= lead + trail) return str;
-        return `${str.slice(0, lead)}…${str.slice(-trail)}`;
-    }
+			// Search filter
+			if (!searchQuery.trim()) return true;
+			const q = searchQuery.toLowerCase().trim();
+			return (
+				p.name.toLowerCase().includes(q) ||
+				p.manufacturer.toLowerCase().includes(q) ||
+				p.id.toLowerCase().includes(q) ||
+				(verifiedInfo && verifiedInfo.ensName.toLowerCase().includes(q)) ||
+				(p.batchNumber && p.batchNumber.toLowerCase().includes(q)) ||
+				(p.blockchainTxHash && p.blockchainTxHash.toLowerCase().includes(q)) ||
+				(p.description && p.description.toLowerCase().includes(q))
+			);
+		})
+	);
 
-    function copyToClipboard(text: string, id: string) {
-        navigator.clipboard.writeText(text);
-        copiedId = id;
-        setTimeout(() => {
-            if (copiedId === id) copiedId = null;
-        }, 2000);
-    }
+	function formatDate(timestamp: Date | number) {
+		const date = timestamp instanceof Date ? timestamp : new Date(Number(timestamp) * 1000);
+		return date.toLocaleDateString('en-US', {
+			month: 'short',
+			day: 'numeric',
+			year: 'numeric',
+			hour: '2-digit',
+			minute: '2-digit'
+		});
+	}
 
-    function handleSearchSubmit(e: SubmitEvent) {
-        e.preventDefault();
-        const trimmed = searchQuery.trim();
-        if (!trimmed) return;
-        
-        // If there is an exact single match, go to it
-        if (filteredProducts.length === 1) {
-            goto(`/verify/${filteredProducts[0].id}`);
-            return;
-        }
+	function truncate(str: string, lead = 8, trail = 6) {
+		if (!str) return '';
+		if (str.length <= lead + trail) return str;
+		return `${str.slice(0, lead)}…${str.slice(-trail)}`;
+	}
 
-        // If user typed a UUID or ID-like string not in list, allow direct verification lookup
-        if (trimmed.length > 20 && !trimmed.includes(' ')) {
-            goto(`/verify/${trimmed}`);
-        }
-    }
+	function copyToClipboard(text: string, id: string) {
+		navigator.clipboard.writeText(text);
+		copiedId = id;
+		setTimeout(() => {
+			if (copiedId === id) copiedId = null;
+		}, 2000);
+	}
 </script>
 
 <svelte:head>
-    <title>Public Ledger | TearRubr</title>
-    <meta name="description" content="Explore the public ledger of authenticated products backed by Ethereum smart contracts." />
+	<title>Public Ledger | TearRubr</title>
+	<meta
+		name="description"
+		content="Explore cryptographically verified product and batch records indexed by The Graph on Ethereum Sepolia."
+	/>
 </svelte:head>
 
-<div class="min-h-screen bg-[#08080e] text-text-primary">
-    <!-- Top Navigation -->
-    <nav class="border-b border-border bg-[#08080e]">
-        <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-            <div class="flex items-center gap-6">
-                <a href="/" class="flex items-center gap-2.5">
-                    <Logo size={28} />
-                    <span class="text-lg font-bold tracking-tight text-text-primary">TearRubr</span>
-                </a>
-                <div class="h-5 w-px bg-border"></div>
-                <div class="flex items-center gap-2">
-                    <span class="text-sm font-medium text-text-primary">Public Ledger</span>
-                    <span class="text-[11px] font-mono-tight px-2 py-0.5 rounded bg-surface-raised border border-border text-accent">
-                        Sepolia
-                    </span>
-                </div>
-            </div>
+<div class="min-h-screen bg-[#08080e] text-text-primary selection:bg-indigo-500/20 pb-28">
+	<!-- Floating Pill Dock Navigation -->
+	<Navbar currentPath="/verify" />
 
-            <div class="flex items-center gap-4">
-                <a href="/" class="text-sm text-text-secondary hover:text-text-primary transition-colors">Home</a>
-                <a href="/dashboard" class="text-sm font-medium text-text-primary px-3.5 py-1.5 rounded-lg border border-border hover:border-text-tertiary hover:bg-surface-raised transition-all">
-                    Manufacturer Portal
-                </a>
-            </div>
-        </div>
-    </nav>
+	<!-- Atmospheric Blooms (Sahara AI aesthetic) -->
+	<div class="fixed inset-0 pointer-events-none overflow-hidden select-none z-0">
+		<div class="absolute top-10 right-10 w-[500px] h-[500px] rounded-full bg-[#6366f1]/15 blur-[140px]"></div>
+		<div class="absolute bottom-20 left-10 w-[500px] h-[500px] rounded-full bg-[#10b981]/15 blur-[140px]"></div>
+	</div>
 
-    <main class="max-w-7xl mx-auto px-6 py-10">
-        <!-- Header & Stats -->
-        <div class="mb-8" in:fly={{ y: 10, duration: 400 }}>
-            <div class="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-8 border-b border-border">
-                <div>
-                    <div class="flex items-center gap-2.5 mb-2">
-                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-accent/10 text-accent border border-accent/20">
-                            <span class="w-1.5 h-1.5 rounded-full bg-accent animate-pulse"></span>
-                            On-Chain Explorer
-                        </span>
-                        <span class="text-xs text-text-tertiary font-mono-tight">Chain ID: 11155111</span>
-                    </div>
-                    <h1 class="text-3xl font-extrabold tracking-tight text-text-primary mb-2">
-                        Public Authenticity Ledger
-                    </h1>
-                    <p class="text-sm text-text-secondary max-w-2xl">
-                        A transparent, decentralized ledger recording genuine product identities and cryptographic verification proofs on Ethereum.
-                    </p>
-                </div>
+	<!-- Main Container -->
+	<main class="max-w-6xl mx-auto px-4 sm:px-6 pt-32 sm:pt-40 relative z-10">
+		<!-- Header & The Graph Status Bar -->
+		<div class="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-8 border-b border-white/[0.08]">
+			<div>
+				<div class="flex items-center gap-2 mb-2">
+					<span class="text-xs font-mono-tight uppercase tracking-wider text-accent font-semibold">
+						Decentralized Explorer
+					</span>
+					<span class="text-white/20">/</span>
+					<span class="text-xs font-mono-tight text-emerald-400">Ethereum Sepolia</span>
+				</div>
+				<h1 class="text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-white font-display">
+					Public Ledger
+				</h1>
+				<p class="text-xs sm:text-sm text-[#9494a8] mt-2 max-w-xl leading-relaxed">
+					Browse all product identities, batch Merkle rollups, and physical tamper-evident seal records registered on-chain.
+				</p>
+			</div>
 
-                <!-- Contract Details Badge -->
-                {#if data.contractAddress}
-                    <div class="bg-surface-raised border border-border rounded-xl p-3.5 text-xs">
-                        <span class="text-text-tertiary block mb-1 uppercase tracking-wider font-semibold text-[10px]">Smart Contract</span>
-                        <a 
-                            href="{data.explorerBaseUrl}/address/{data.contractAddress}"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            class="font-mono-tight text-accent hover:underline flex items-center gap-1.5"
-                        >
-                            {truncate(data.contractAddress, 10, 8)}
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                            </svg>
-                        </a>
-                    </div>
-                {/if}
-            </div>
+			<!-- The Graph Subgraph Real-Time Status Pill -->
+			<div class="p-3.5 rounded-2xl bg-white/[0.03] border border-white/[0.08] backdrop-blur-xl shrink-0">
+				<div class="flex items-center justify-between gap-3 text-xs mb-1.5">
+					<div class="flex items-center gap-2">
+						<span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+						<span class="font-bold text-white font-mono-tight">The Graph</span>
+					</div>
+					<span class="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 text-[10px] font-mono-tight">
+						{auth.subgraph.health.toUpperCase()}
+					</span>
+				</div>
+				<div class="grid grid-cols-2 gap-x-4 gap-y-1 text-[11px] text-[#8e8ea0] font-mono-tight">
+					<div>Synced Block: <span class="text-white">#{auth.subgraph.syncedBlock.toLocaleString()}</span></div>
+					<div>Latency: <span class="text-emerald-400">{auth.subgraph.queryLatencyMs}ms</span></div>
+					<div>Subgraph: <span class="text-white">{auth.subgraph.subgraphName}</span></div>
+					<div>Uptime: <span class="text-white">{auth.subgraph.indexingUptime}</span></div>
+				</div>
+			</div>
+		</div>
 
-            <!-- Ledger Stats Bar -->
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-px bg-border rounded-xl overflow-hidden mt-6">
-                <div class="bg-surface-raised px-6 py-4">
-                    <p class="text-xs text-text-tertiary font-medium uppercase tracking-wider mb-1">Total Ledger Records</p>
-                    <p class="text-2xl font-bold text-text-primary">{data.products.length}</p>
-                </div>
-                <div class="bg-surface-raised px-6 py-4">
-                    <p class="text-xs text-text-tertiary font-medium uppercase tracking-wider mb-1">Authentic Status</p>
-                    <div class="flex items-center gap-2">
-                        <p class="text-2xl font-bold text-success">{data.products.length}</p>
-                        <span class="text-xs text-text-tertiary font-mono-tight">(100% Verified)</span>
-                    </div>
-                </div>
-                <div class="bg-surface-raised px-6 py-4">
-                    <p class="text-xs text-text-tertiary font-medium uppercase tracking-wider mb-1">Testnet Environment</p>
-                    <div class="flex items-center gap-2">
-                        <span class="w-2 h-2 rounded-full bg-success"></span>
-                        <p class="text-base font-semibold text-text-primary">Ethereum Sepolia</p>
-                    </div>
-                </div>
-            </div>
-        </div>
+		<!-- Search Bar & Filters -->
+		<div class="mt-8 space-y-4">
+			<!-- Clean Search Input -->
+			<div class="relative">
+				<div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-text-tertiary">
+					<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+					</svg>
+				</div>
+				<input
+					type="text"
+					bind:value={searchQuery}
+					placeholder="Search by Product Name, Brand, ENS (e.g. cocacola.eth), Batch LOT, or ID..."
+					class="w-full pl-11 pr-24 py-3.5 rounded-2xl bg-white/[0.03] border border-white/[0.08] hover:border-white/[0.15] text-white placeholder-[#606074] text-xs sm:text-sm backdrop-blur-xl focus:outline-none focus:border-accent transition-all shadow-lg"
+				/>
+				{#if searchQuery}
+					<button
+						onclick={() => (searchQuery = '')}
+						class="absolute inset-y-0 right-3 flex items-center px-2 text-xs text-text-tertiary hover:text-white"
+					>
+						Clear
+					</button>
+				{/if}
+			</div>
 
-        <!-- Search & Query Bar -->
-        <div class="mb-6">
-            <form onsubmit={handleSearchSubmit} class="relative flex items-center">
-                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-text-tertiary" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                </div>
-                <input 
-                    type="text" 
-                    bind:value={searchQuery}
-                    placeholder="Search by product name, manufacturer, product ID, or on-chain tx hash…"
-                    class="w-full pl-11 pr-32 py-3.5 bg-surface-raised border border-border rounded-xl text-sm text-text-primary placeholder-text-tertiary outline-none focus:border-accent focus:ring-1 focus:ring-accent/30 transition-all font-mono-tight"
-                />
-                {#if searchQuery.trim()}
-                    <button 
-                        type="button" 
-                        onclick={() => searchQuery = ''}
-                        class="absolute right-24 text-text-tertiary hover:text-text-primary text-xs px-2 py-1 transition-colors"
-                    >
-                        Clear
-                    </button>
-                {/if}
-                <button 
-                    type="submit"
-                    class="absolute right-2.5 px-4 py-2 rounded-lg bg-surface border border-border hover:border-text-tertiary text-text-secondary hover:text-text-primary text-xs font-medium transition-all"
-                >
-                    Search
-                </button>
-            </form>
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mt-3 px-1 text-xs text-text-tertiary">
-                <div class="flex items-center gap-2">
-                    <button 
-                        type="button" 
-                        onclick={() => filterType = 'all'}
-                        class="px-2.5 py-1 rounded-lg border text-xs transition-all {filterType === 'all' ? 'bg-surface-raised border-accent text-accent font-semibold' : 'bg-surface border-border text-text-secondary hover:text-text-primary'}"
-                    >
-                        All ({data.products.length})
-                    </button>
-                    <button 
-                        type="button" 
-                        onclick={() => filterType = 'batches'}
-                        class="px-2.5 py-1 rounded-lg border text-xs transition-all {filterType === 'batches' ? 'bg-surface-raised border-accent text-accent font-semibold' : 'bg-surface border-border text-text-secondary hover:text-text-primary'}"
-                    >
-                        Batch Runs ({batchCount})
-                    </button>
-                    <button 
-                        type="button" 
-                        onclick={() => filterType = 'single'}
-                        class="px-2.5 py-1 rounded-lg border text-xs transition-all {filterType === 'single' ? 'bg-surface-raised border-accent text-accent font-semibold' : 'bg-surface border-border text-text-secondary hover:text-text-primary'}"
-                    >
-                        Single Items ({singleCount})
-                    </button>
-                </div>
-                <span>Showing {filteredProducts.length} records</span>
-            </div>
-        </div>
+			<!-- Filter Pills -->
+			<div class="flex flex-wrap items-center gap-2 pt-1 text-xs">
+				<button
+					onclick={() => (filterType = 'all')}
+					class="px-4 py-1.5 rounded-full font-medium transition-all {filterType === 'all' ? 'bg-white text-[#08080e] shadow-sm' : 'bg-white/[0.04] text-[#8e8ea0] hover:text-white border border-white/[0.06]'}"
+				>
+					All Records ({data.products.length})
+				</button>
+				<button
+					onclick={() => (filterType = 'verified')}
+					class="px-4 py-1.5 rounded-full font-medium transition-all flex items-center gap-1.5 {filterType === 'verified' ? 'bg-emerald-400 text-[#08080e] shadow-sm' : 'bg-white/[0.04] text-[#8e8ea0] hover:text-white border border-white/[0.06]'}"
+				>
+					<span>✓ Verified Brands (ENS)</span>
+					<span class="text-[10px] opacity-80 font-mono-tight">({verifiedCount})</span>
+				</button>
+				<button
+					onclick={() => (filterType = 'batches')}
+					class="px-4 py-1.5 rounded-full font-medium transition-all {filterType === 'batches' ? 'bg-indigo-400 text-[#08080e] shadow-sm' : 'bg-white/[0.04] text-[#8e8ea0] hover:text-white border border-white/[0.06]'}"
+				>
+					Batch Runs ({batchCount})
+				</button>
+				<button
+					onclick={() => (filterType = 'single')}
+					class="px-4 py-1.5 rounded-full font-medium transition-all {filterType === 'single' ? 'bg-white text-[#08080e] shadow-sm' : 'bg-white/[0.04] text-[#8e8ea0] hover:text-white border border-white/[0.06]'}"
+				>
+					Single Items ({singleCount})
+				</button>
+			</div>
+		</div>
 
-        <!-- Ledger Table -->
-        <div class="border border-border rounded-xl overflow-hidden bg-surface-raised">
-            {#if filteredProducts.length > 0}
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse">
-                        <thead>
-                            <tr class="border-b border-border bg-surface text-[11px] font-semibold text-text-tertiary uppercase tracking-wider">
-                                <th class="py-3.5 px-6">Status</th>
-                                <th class="py-3.5 px-6">Product / Manufacturer</th>
-                                <th class="py-3.5 px-6">Product ID</th>
-                                <th class="py-3.5 px-6">On-Chain Tx Hash</th>
-                                <th class="py-3.5 px-6">Registered</th>
-                                <th class="py-3.5 px-6 text-right">Verification</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-border text-sm">
-                            {#each filteredProducts as product (product.id)}
-                                <tr class="hover:bg-surface/50 transition-colors group">
-                                    <!-- Status -->
-                                    <td class="py-4 px-6 whitespace-nowrap">
-                                        <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-success/10 text-success border border-success/20">
-                                            <span class="w-1.5 h-1.5 rounded-full bg-success"></span>
-                                            AUTHENTIC
-                                        </div>
-                                    </td>
+		<!-- Product Ledger Feed -->
+		<div class="mt-8">
+			{#if filteredProducts.length === 0}
+				<div class="p-12 rounded-3xl bg-white/[0.02] border border-white/[0.06] text-center backdrop-blur-xl">
+					<div class="text-2xl mb-3">🔍</div>
+					<h3 class="text-sm font-bold text-white font-display">No matching on-chain records found</h3>
+					<p class="text-xs text-[#8e8ea0] mt-1 max-w-sm mx-auto">
+						No products or batches match your query. Try searching by ENS (e.g. `cocacola.eth`) or product name.
+					</p>
+					<button
+						onclick={() => {
+							searchQuery = '';
+							filterType = 'all';
+						}}
+						class="mt-4 px-4 py-2 rounded-full bg-white/10 text-xs text-white hover:bg-white/20 transition-all font-display"
+					>
+						Reset Search
+					</button>
+				</div>
+			{:else}
+				<div class="grid grid-cols-1 gap-3.5">
+					{#each filteredProducts as product (product.id)}
+						{@const verifiedInfo = getVerifiedInfo(product.manufacturer)}
+						<div
+							class="p-4 sm:p-5 rounded-2xl bg-white/[0.02] hover:bg-white/[0.04] border border-white/[0.08] hover:border-white/[0.15] backdrop-blur-xl transition-all duration-200 shadow-lg group"
+							in:fade={{ duration: 120 }}
+						>
+							<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+								<!-- Left: Product Identity & Verified Brand Pill -->
+								<div class="space-y-1.5">
+									<div class="flex flex-wrap items-center gap-2">
+										<a
+											href="/verify/{product.id}"
+											class="text-base font-bold text-white hover:text-accent font-display transition-colors"
+										>
+											{product.name}
+										</a>
 
-                                    <!-- Product Info -->
-                                    <td class="py-4 px-6">
-                                        <div class="font-semibold text-text-primary group-hover:text-accent transition-colors">
-                                            {product.name}
-                                        </div>
-                                        <div class="text-xs text-text-tertiary flex items-center gap-1.5 mt-0.5">
-                                            <span>{product.manufacturer}</span>
-                                            {#if product.description}
-                                                <span class="text-border">·</span>
-                                                <span class="truncate max-w-[200px]">{product.description}</span>
-                                            {/if}
-                                        </div>
-                                        {#if product.batchNumber}
-                                            <div class="mt-1.5 flex items-center gap-1.5 flex-wrap">
-                                                <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono-tight bg-accent/10 text-accent border border-accent/20">
-                                                    Lot: {product.batchNumber} (#{product.serialIndex || 1} of {product.batchQuantity || '–'})
-                                                </span>
-                                                {#if product.sealStatus === 'opened'}
-                                                    <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                                                        <span class="w-1 h-1 rounded-full bg-amber-400"></span>
-                                                        Unsealed
-                                                    </span>
-                                                {:else}
-                                                    <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-success/10 text-success border border-success/20">
-                                                        <span class="w-1 h-1 rounded-full bg-success"></span>
-                                                        Sealed
-                                                    </span>
-                                                {/if}
-                                            </div>
-                                        {/if}
-                                    </td>
+										<!-- Brand Verification Badge (Anti-Spoofing) -->
+										{#if verifiedInfo}
+											<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[11px] font-mono-tight">
+												<span>✓</span>
+												<span class="font-semibold">{verifiedInfo.ensName}</span>
+												<span class="text-[10px] text-emerald-500">[{verifiedInfo.tier}]</span>
+											</span>
+										{:else}
+											<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/[0.05] text-[#8e8ea0] border border-white/10 text-[10px] font-mono-tight">
+												Unverified Issuer
+											</span>
+										{/if}
 
-                                    <!-- Product ID -->
-                                    <td class="py-4 px-6 whitespace-nowrap font-mono-tight text-xs">
-                                        <div class="flex items-center gap-2">
-                                            <span class="text-text-secondary">{truncate(product.id, 8, 6)}</span>
-                                            <button 
-                                                type="button"
-                                                onclick={() => copyToClipboard(product.id, product.id)}
-                                                class="text-text-tertiary hover:text-text-primary transition-colors p-1 rounded hover:bg-surface"
-                                                title="Copy full Product ID"
-                                            >
-                                                {#if copiedId === product.id}
-                                                    <span class="text-success text-[10px] font-medium">Copied</span>
-                                                {:else}
-                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                                                    </svg>
-                                                {/if}
-                                            </button>
-                                        </div>
-                                    </td>
+										<!-- Batch Badge -->
+										{#if product.batchNumber}
+											<span class="px-2 py-0.5 rounded-md bg-indigo-500/15 text-indigo-400 border border-indigo-500/30 text-[11px] font-mono-tight">
+												LOT: {product.batchNumber} (#{product.serialIndex}/{product.batchQuantity})
+											</span>
+										{/if}
 
-                                    <!-- Blockchain Tx Hash -->
-                                    <td class="py-4 px-6 whitespace-nowrap font-mono-tight text-xs">
-                                        {#if product.blockchainTxHash}
-                                            <a 
-                                                href="{data.explorerBaseUrl}/tx/{product.blockchainTxHash}"
-                                                target="_blank" 
-                                                rel="noopener noreferrer"
-                                                class="text-accent hover:underline inline-flex items-center gap-1.5"
-                                                title="View transaction on Etherscan Sepolia"
-                                            >
-                                                {truncate(product.blockchainTxHash, 8, 6)}
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                                                </svg>
-                                            </a>
-                                        {:else}
-                                            <span class="text-text-tertiary">Local Record</span>
-                                        {/if}
-                                    </td>
+										<!-- Tamper Seal Status -->
+										<span class="px-2 py-0.5 rounded-md text-[11px] font-mono-tight {product.sealStatus === 'opened' ? 'bg-amber-500/15 text-amber-300 border border-amber-500/30' : 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30'}">
+											{product.sealStatus === 'opened' ? 'Torn / Broken' : 'Seal: Intact'}
+										</span>
+									</div>
 
-                                    <!-- Date -->
-                                    <td class="py-4 px-6 whitespace-nowrap text-xs text-text-tertiary">
-                                        {formatDate(product.createdAt)}
-                                    </td>
+									<div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[#8e8ea0]">
+										<span>Issuer: <strong class="text-[#c0c0d4]">{product.manufacturer}</strong></span>
+										{#if product.description}
+											<span class="text-white/20 hidden sm:inline">·</span>
+											<span class="line-clamp-1">{product.description}</span>
+										{/if}
+										<span class="text-white/20 hidden sm:inline">·</span>
+										<span>{formatDate(product.createdAt)}</span>
+									</div>
+								</div>
 
-                                    <!-- Action -->
-                                    <td class="py-4 px-6 whitespace-nowrap text-right">
-                                        <a 
-                                            href="/verify/{product.id}"
-                                            class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-border hover:border-accent text-text-secondary hover:text-accent text-xs font-medium transition-all"
-                                        >
-                                            Verify Proof
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
-                                            </svg>
-                                        </a>
-                                    </td>
-                                </tr>
-                            {/each}
-                        </tbody>
-                    </table>
-                </div>
-            {:else}
-                <!-- No Results / Empty State -->
-                <div class="px-6 py-16 text-center">
-                    <div class="w-12 h-12 rounded-full bg-surface border border-border flex items-center justify-center mx-auto mb-4 text-text-tertiary">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                        </svg>
-                    </div>
-                    <h3 class="text-base font-semibold text-text-primary mb-1">No Ledger Records Found</h3>
-                    <p class="text-sm text-text-secondary max-w-md mx-auto mb-6">
-                        {#if searchQuery.trim()}
-                            No products in the ledger match "{searchQuery}". You can verify an unindexed ID directly.
-                        {:else}
-                            No products have been registered yet. Register a product to create the first on-chain record.
-                        {/if}
-                    </p>
-                    
-                    <div class="flex items-center justify-center gap-4">
-                        {#if searchQuery.trim()}
-                            <a 
-                                href="/verify/{searchQuery.trim()}"
-                                class="px-4 py-2 rounded-lg bg-accent hover:bg-accent-muted text-white text-xs font-semibold transition-all"
-                            >
-                                Lookup ID Directly →
-                            </a>
-                            <button 
-                                type="button" 
-                                onclick={() => searchQuery = ''}
-                                class="px-4 py-2 rounded-lg border border-border text-text-secondary hover:text-text-primary text-xs font-medium transition-all"
-                            >
-                                Reset Search
-                            </button>
-                        {:else}
-                            <a 
-                                href="/register"
-                                class="px-4 py-2 rounded-lg bg-accent hover:bg-accent-muted text-white text-xs font-semibold transition-all"
-                            >
-                                Register First Product
-                            </a>
-                        {/if}
-                    </div>
-                </div>
-            {/if}
-        </div>
-    </main>
+								<!-- Right: IDs, Hashes & Actions -->
+								<div class="flex items-center gap-3 shrink-0 self-end sm:self-center">
+									<!-- On-Chain Tx Etherscan Link -->
+									{#if product.blockchainTxHash}
+										<a
+											href="{data.explorerBaseUrl}/tx/{product.blockchainTxHash}"
+											target="_blank"
+											rel="noopener noreferrer"
+											class="px-2.5 py-1 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-[11px] font-mono-tight text-accent hover:text-white transition-colors flex items-center gap-1.5"
+											title="View on Sepolia Etherscan"
+										>
+											<span>Tx: {truncate(product.blockchainTxHash, 6, 4)}</span>
+											<span>↗</span>
+										</a>
+									{/if}
+
+									<!-- Copy ID Button -->
+									<button
+										onclick={() => copyToClipboard(product.id, product.id)}
+										class="px-2.5 py-1 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-[11px] font-mono-tight text-[#8e8ea0] hover:text-white transition-colors"
+										title="Copy Unique ID"
+									>
+										{copiedId === product.id ? '✓ Copied' : truncate(product.id, 6, 4)}
+									</button>
+
+									<!-- Verify CTA -->
+									<a
+										href="/verify/{product.id}"
+										class="px-3.5 py-1.5 rounded-full bg-white text-[#08080e] hover:bg-white/90 font-semibold text-xs font-display transition-all shadow-sm"
+									>
+										Verify Proof →
+									</a>
+								</div>
+							</div>
+						</div>
+					{/each}
+				</div>
+			{/if}
+		</div>
+	</main>
 </div>
